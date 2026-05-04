@@ -278,8 +278,9 @@ MonoBehaviour:
   flowerProjectilePrefab2: {fileID: 4313834543147769393, guid: bbc95ef69f13d4d458dd1c26a8b1b4f2, type: 3}
   previewTrailColor2: {r: 0.4, g: 0.8, b: 1, a: 0.4}
   flowerCount: 20
-  landingRadius: 5
+  landingRadius: 10
   maxForce: 50
+  minForce: 10
   maxDragDistance: 100
   gravityScale: 0.075
   previewTrailWidth: 0.04
@@ -323,8 +324,8 @@ MonoBehaviour:
   separationRadius: 2
   perceptionRadiusMin: 6
   perceptionRadiusMax: 10
-  minSpeed: 1.5
-  maxSpeed: 4.5
+  minSpeed: 2.5
+  maxSpeed: 5
   arousalDecayTime: 5
   arousalRiseSpeed: 5
   fleeRadius: 50
@@ -336,8 +337,18 @@ MonoBehaviour:
   flockGravityRadius: 10
   flockGravityFalloff: 0.4
   flockGravityPanicMult: 1.2
+  antiSplitRadius: 14
+  antiSplitWeight: 3.5
+  antiSplitArousalThreshold: 0.4
+  idleRelaxTime: 18
+  idleWanderRadius: 20
+  idleWanderSpeed: 10
+  idleWanderInterval: 1
+  idleSpreadBias: 0.85
+  idleMaxSpreadRadius: 30
   playerTransform: {fileID: 0}
   allSheep: []
+  foodSources: []
 --- !u!4 &21838226
 Transform:
   m_ObjectHideFlags: 0
@@ -487,7 +498,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3e11d3b6caabda64782acc6b6baeb9f6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 25
+  moveSpeed: 12.5
   rotateSpeed: 8
   acceleration: 8
   deceleration: 12
@@ -1332,63 +1343,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ba28d22e9c38ffe4cb969a9a91ea7d8d, type: 3}
---- !u!1001 &4631934961933232002
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 4007399974059555238, guid: 413913ca87ff0e34286e0a7756456516, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -22.00697
-      objectReference: {fileID: 0}
-    - target: {fileID: 4007399974059555238, guid: 413913ca87ff0e34286e0a7756456516, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: -0.000022888184
-      objectReference: {fileID: 0}
-    - target: {fileID: 4007399974059555238, guid: 413913ca87ff0e34286e0a7756456516, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -3.4046001
-      objectReference: {fileID: 0}
-    - target: {fileID: 4007399974059555238, guid: 413913ca87ff0e34286e0a7756456516, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4007399974059555238, guid: 413913ca87ff0e34286e0a7756456516, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4007399974059555238, guid: 413913ca87ff0e34286e0a7756456516, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4007399974059555238, guid: 413913ca87ff0e34286e0a7756456516, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4007399974059555238, guid: 413913ca87ff0e34286e0a7756456516, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4007399974059555238, guid: 413913ca87ff0e34286e0a7756456516, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4007399974059555238, guid: 413913ca87ff0e34286e0a7756456516, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4383961388323365660, guid: 413913ca87ff0e34286e0a7756456516, type: 3}
-      propertyPath: m_Name
-      value: flower_redA
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 413913ca87ff0e34286e0a7756456516, type: 3}
 --- !u!1001 &6821920415262670621
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1463,4 +1417,3 @@ SceneRoots:
   - {fileID: 97125802}
   - {fileID: 4319088199031623600}
   - {fileID: 6821920415262670621}
-  - {fileID: 4631934961933232002}

@@ -45,15 +45,39 @@ public class FlockManager : MonoBehaviour
     public float flockGravityRadius = 8f;
     [Tooltip("Fracción mínima de fuerza cuando está muy cerca (evita colapso)")]
     public float flockGravityFalloff = 0.2f;
-    [Tooltip("Multiplica la gravedad cuando el rebaño está en Fleeing (mantiene grupo bajo presión)")]
+    [Tooltip("Multiplica la gravedad cuando el rebaño está en Fleeing")]
     public float flockGravityPanicMult = 1.8f;
 
-    // Centroide y dispersión calculados una vez por frame para todas las ovejas
+    [Header("Anti-Split (magnetismo bajo presión)")]
+    [Tooltip("Distancia del centroide a partir de la cual se activa el magnetismo fuerte")]
+    public float antiSplitRadius = 14f;
+    [Tooltip("Fuerza extra de atracción al centroide cuando la oveja se está separando")]
+    public float antiSplitWeight = 3.5f;
+    [Tooltip("Solo actúa si el Arousal supera este valor")]
+    [Range(0f, 1f)]
+    public float antiSplitArousalThreshold = 0.4f;
+
+    [Header("Idle Wander (Campeo relajado)")]
+    [Tooltip("Segundos quieta antes de dispersarse (0 = inmediato al entrar en Grazing)")]
+    public float idleRelaxTime = 0f;
+    [Tooltip("Radio máximo de cada paso de campeo desde la posición actual")]
+    public float idleWanderRadius = 10f;
+    [Tooltip("Velocidad al campear")]
+    public float idleWanderSpeed = 1.0f;
+    [Tooltip("Segundos base entre cada pasito de campeo")]
+    public float idleWanderInterval = 1.2f;
+    [Tooltip("Cuánto tiende la oveja a alejarse del centroide (0=aleatorio puro, 1=siempre se aleja)")]
+    [Range(0f, 1f)]
+    public float idleSpreadBias = 0.75f;
+    [Tooltip("Radio máximo desde el centroide dentro del que pueden campear")]
+    public float idleMaxSpreadRadius = 20f;
+
     [HideInInspector] public Vector3 FlockCentroid { get; private set; }
-    [HideInInspector] public float FlockSpreadRadius { get; private set; } // radio promedio del grupo
+    [HideInInspector] public float FlockSpreadRadius { get; private set; }
 
     [HideInInspector] public Transform playerTransform;
     [HideInInspector] public List<SheepAgent> allSheep = new();
+    [HideInInspector] public List<FoodSource> foodSources = new();
 
     void Start()
     {
@@ -95,22 +119,57 @@ public class FlockManager : MonoBehaviour
         if (spawned < flockSize)
             Debug.LogWarning($"[FlockManager] Solo se spawnearon {spawned}/{flockSize} ovejas. " +
                              "Amplía el NavMesh o mueve el FlockManager a una zona navegable.");
+
+        foodSources.AddRange(FindObjectsByType<FoodSource>(FindObjectsSortMode.None));
     }
 
     void Update()
     {
         if (allSheep.Count == 0) return;
 
-        // Centroide
+        // Limpiar flores expiradas de la lista automáticamente
+        foodSources.RemoveAll(fs => fs == null);
+
         Vector3 sum = Vector3.zero;
         foreach (var sheep in allSheep)
             sum += sheep.transform.position;
         FlockCentroid = sum / allSheep.Count;
 
-        // Radio de dispersión promedio (mide qué tan fragmentado está el grupo)
         float spreadSum = 0f;
         foreach (var sheep in allSheep)
             spreadSum += Vector3.Distance(sheep.transform.position, FlockCentroid);
         FlockSpreadRadius = spreadSum / allSheep.Count;
+    }
+
+    void OnDrawGizmosSelected()
+    {
+        if (!Application.isPlaying) return;
+
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawSphere(FlockCentroid, 0.4f);
+
+        Gizmos.color = new Color(0f, 1f, 0f, 0.15f);
+        Gizmos.DrawSphere(FlockCentroid, idleMaxSpreadRadius);
+        Gizmos.color = Color.green;
+        DrawWireCircle(FlockCentroid, idleMaxSpreadRadius, 32);
+
+        Gizmos.color = new Color(1f, 0.5f, 0f, 0.1f);
+        DrawWireCircle(FlockCentroid, flockGravityRadius, 32);
+
+        Gizmos.color = new Color(1f, 0f, 0f, 0.2f);
+        DrawWireCircle(FlockCentroid, antiSplitRadius, 32);
+    }
+
+    void DrawWireCircle(Vector3 center, float radius, int segments)
+    {
+        float step = 360f / segments;
+        Vector3 prev = center + new Vector3(radius, 0f, 0f);
+        for (int i = 1; i <= segments; i++)
+        {
+            float angle = i * step * Mathf.Deg2Rad;
+            Vector3 next = center + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
+            Gizmos.DrawLine(prev, next);
+            prev = next;
+        }
     }
 }

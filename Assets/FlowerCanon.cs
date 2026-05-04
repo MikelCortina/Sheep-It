@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -20,6 +19,7 @@ public class FlowerCannon : MonoBehaviour
     public int flowerCount = 5;
     public float landingRadius = 2f;
     public float maxForce = 30f;
+    public float minForce = 5f;
     public float maxDragDistance = 200f;
 
     [Header("Física")]
@@ -32,7 +32,7 @@ public class FlowerCannon : MonoBehaviour
     private bool isDragging = false;
     private float currentForce = 0f;
     private Vector3 currentLaunchDir;
-    private int currentMouseButton = 0; // 0 = izquierdo, 1 = derecho
+    private int currentMouseButton = 0;
 
     private List<LineRenderer> previewLines = new List<LineRenderer>();
 
@@ -54,20 +54,18 @@ public class FlowerCannon : MonoBehaviour
 
     void Update()
     {
-        // Detectar qué botón inicia el arrastre
         if (!isDragging)
         {
-            if (Input.GetMouseButtonDown(0))
-                StartDrag(0);
-            else if (Input.GetMouseButtonDown(1))
-                StartDrag(1);
+            if (Input.GetMouseButtonDown(0)) StartDrag(0);
+            else if (Input.GetMouseButtonDown(1)) StartDrag(1);
         }
 
         if (isDragging && Input.GetMouseButton(currentMouseButton))
         {
             Vector2 dragDelta = (Vector2)Input.mousePosition - dragStartPos;
             float dragDistance = Mathf.Clamp(dragDelta.magnitude, 0f, maxDragDistance);
-            currentForce = (dragDistance / maxDragDistance) * maxForce;
+            float t = dragDistance / maxDragDistance;
+            currentForce = Mathf.Lerp(minForce, maxForce, t);
             currentLaunchDir = GetSlingshotDirection(dragDelta);
 
             UpdatePreviewColors(currentMouseButton);
@@ -78,12 +76,10 @@ public class FlowerCannon : MonoBehaviour
         if (isDragging && Input.GetMouseButtonUp(currentMouseButton))
         {
             isDragging = false;
-
             trajectoryLine.positionCount = 0;
-            foreach (var lr in previewLines)
-                lr.positionCount = 0;
+            foreach (var lr in previewLines) lr.positionCount = 0;
 
-            if (currentForce > 0.5f)
+            if (currentForce > minForce * 0.5f)
                 FireFlowers(currentLaunchDir, currentForce, currentMouseButton);
 
             currentForce = 0f;
@@ -101,29 +97,18 @@ public class FlowerCannon : MonoBehaviour
     {
         Color baseColor = mouseButton == 0 ? previewTrailColor1 : previewTrailColor2;
         Color fadeColor = new Color(baseColor.r, baseColor.g, baseColor.b, 0f);
-
         trajectoryLine.startColor = baseColor;
         trajectoryLine.endColor = fadeColor;
-
-        foreach (var lr in previewLines)
-        {
-            lr.startColor = baseColor;
-            lr.endColor = fadeColor;
-        }
+        foreach (var lr in previewLines) { lr.startColor = baseColor; lr.endColor = fadeColor; }
     }
 
     Vector3 GetSlingshotDirection(Vector2 dragDelta)
     {
         Vector2 invertedDelta = -dragDelta.normalized;
-
         Vector3 camRight = Camera.main.transform.right;
         Vector3 camForward = Camera.main.transform.forward;
-
-        camRight.y = 0f;
-        camForward.y = 0f;
-        camRight = camRight.normalized;
-        camForward = camForward.normalized;
-
+        camRight.y = 0f; camForward.y = 0f;
+        camRight = camRight.normalized; camForward = camForward.normalized;
         return (camRight * invertedDelta.x + camForward * invertedDelta.y).normalized;
     }
 
@@ -138,13 +123,9 @@ public class FlowerCannon : MonoBehaviour
         {
             Vector3 nextPos = pos + velocity * dt;
             velocity += scaledGravity * dt;
-
-            if (Physics.Linecast(pos, nextPos, out RaycastHit hit))
-                return hit.point;
-
+            if (Physics.Linecast(pos, nextPos, out RaycastHit hit)) return hit.point;
             pos = nextPos;
         }
-
         return pos;
     }
 
@@ -152,19 +133,15 @@ public class FlowerCannon : MonoBehaviour
     {
         Vector3 toTarget = targetPoint - startPos;
         Vector3 horizontal = new Vector3(toTarget.x, 0f, toTarget.z).normalized;
-
         float g = Mathf.Abs(Physics.gravity.y) * gravityScale;
         float v = force;
         float dx = new Vector2(toTarget.x, toTarget.z).magnitude;
         float dy = toTarget.y;
         float v2 = v * v;
-
         float disc = v2 * v2 - g * (g * dx * dx + 2f * dy * v2);
-
         float angle = disc < 0f
             ? 45f * Mathf.Deg2Rad
             : Mathf.Atan((v2 - Mathf.Sqrt(disc)) / (g * dx));
-
         return (horizontal * Mathf.Cos(angle) + Vector3.up * Mathf.Sin(angle)).normalized;
     }
 
@@ -181,16 +158,9 @@ public class FlowerCannon : MonoBehaviour
             points.Add(pos);
             Vector3 nextPos = pos + velocity * dt;
             velocity += scaledGravity * dt;
-
-            if (Physics.Linecast(pos, nextPos, out RaycastHit hit))
-            {
-                points.Add(hit.point);
-                break;
-            }
-
+            if (Physics.Linecast(pos, nextPos, out RaycastHit hit)) { points.Add(hit.point); break; }
             pos = nextPos;
         }
-
         return points.ToArray();
     }
 
@@ -204,7 +174,6 @@ public class FlowerCannon : MonoBehaviour
     void DrawAllPreviewTrails(Vector3 baseDir, float force)
     {
         Vector3 landingCenter = GetLandingPoint(baseDir, force, spawnPoint.position);
-
         for (int i = 0; i < flowerCount; i++)
         {
             Vector3 targetPoint = GetCirclePoint(landingCenter, i);
@@ -219,42 +188,30 @@ public class FlowerCannon : MonoBehaviour
     {
         GameObject prefabToUse = mouseButton == 0 ? flowerProjectilePrefab1 : flowerProjectilePrefab2;
         Vector3 landingCenter = GetLandingPoint(baseDir, force, spawnPoint.position);
-
         for (int i = 0; i < flowerCount; i++)
         {
             Vector3 targetPoint = GetCirclePoint(landingCenter, i);
             Vector3 spreadDir = DirectionToLandAt(targetPoint, force, spawnPoint.position);
-            StartCoroutine(SpawnFlowerDelayed(spreadDir, force, i * 0.05f, prefabToUse));
+            SpawnFlower(spreadDir, force, prefabToUse);
         }
+    }
+
+    void SpawnFlower(Vector3 direction, float force, GameObject prefab)
+    {
+        Vector3 safeSpawnPos = spawnPoint.position + Vector3.up * 0.3f;
+        GameObject projectile = Instantiate(prefab, safeSpawnPos, Quaternion.identity);
+        Rigidbody rb = projectile.GetComponent<Rigidbody>();
+        if (rb != null) { rb.useGravity = false; rb.isKinematic = false; rb.linearVelocity = direction * force; }
+        FlowerProjectile fp = projectile.GetComponent<FlowerProjectile>();
+        if (fp != null) fp.gravityScale = gravityScale;
     }
 
     Vector3 GetCirclePoint(Vector3 center, int index)
     {
         if (flowerCount <= 1) return center;
-
         float goldenAngle = 137.5f * Mathf.Deg2Rad;
         float angle = index * goldenAngle;
         float r = landingRadius * Mathf.Sqrt(index / (float)(flowerCount - 1) + 0.001f);
-
         return center + new Vector3(Mathf.Cos(angle) * r, 0f, Mathf.Sin(angle) * r);
-    }
-
-    IEnumerator SpawnFlowerDelayed(Vector3 direction, float force, float delay, GameObject prefab)
-    {
-        yield return new WaitForSeconds(delay);
-
-        GameObject projectile = Instantiate(prefab, spawnPoint.position, Random.rotation);
-        Rigidbody rb = projectile.GetComponent<Rigidbody>();
-
-        if (rb != null)
-        {
-            rb.useGravity = false;
-            rb.isKinematic = false;
-            rb.linearVelocity = direction * force;
-        }
-
-        FlowerProjectile fp = projectile.GetComponent<FlowerProjectile>();
-        if (fp != null)
-            fp.gravityScale = gravityScale;
     }
 }
