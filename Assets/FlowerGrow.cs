@@ -6,16 +6,11 @@ public class FlowerGrow : MonoBehaviour
     public float growDuration = 0.6f;
     public float lifetime = 10f;
 
-    // Ya NO hay fullScale fijo — se lee del propio transform
     private Vector3 targetScale;
 
     void Awake()
     {
-        // Guardar la escala ANTES de que Start() la ponga a cero
-        // Si viene del prefab ya tendrá la escala correcta del Inspector
         targetScale = transform.localScale;
-
-        // Si la escala es cero o casi cero (prefab mal configurado), usar (1,1,1)
         if (targetScale.magnitude < 0.01f)
             targetScale = Vector3.one;
     }

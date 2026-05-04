@@ -176,7 +176,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 0}
+  - {fileID: 2100000, guid: be3b434139be5e14e91c639be1b61877, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -272,14 +272,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   spawnPoint: {fileID: 11554298}
-  flowerProjectilePrefab: {fileID: 4313834543147769393, guid: df764eb8bd40192448e4689d72477ce7, type: 3}
   trajectoryLine: {fileID: 11554299}
-  flowerCount: 5
-  spreadAngle: 5
+  flowerProjectilePrefab1: {fileID: 4313834543147769393, guid: df764eb8bd40192448e4689d72477ce7, type: 3}
+  previewTrailColor1: {r: 1, g: 0.6, b: 0.8, a: 0.4}
+  flowerProjectilePrefab2: {fileID: 4313834543147769393, guid: bbc95ef69f13d4d458dd1c26a8b1b4f2, type: 3}
+  previewTrailColor2: {r: 0.4, g: 0.8, b: 1, a: 0.4}
+  flowerCount: 20
+  landingRadius: 5
   maxForce: 50
   maxDragDistance: 100
-  trajectoryPoints: 30
-  previewTrailColor: {r: 1, g: 0.6, b: 0.8, a: 0.4}
+  gravityScale: 0.075
   previewTrailWidth: 0.04
 --- !u!1 &21838224
 GameObject:

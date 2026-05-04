@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 7709995986561441319}
   - component: {fileID: -4788151279088903609}
   m_Layer: 3
-  m_Name: Sphere
+  m_Name: Sphere 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -56,11 +56,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ee5d50c19d531944da9b32d08194f8d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  flowerVisualPrefab: {fileID: 4383961388323365660, guid: 413913ca87ff0e34286e0a7756456516, type: 3}
+  flowerVisualPrefab: {fileID: 7039722311150844211, guid: ba28d22e9c38ffe4cb969a9a91ea7d8d, type: 3}
   trailStartColor: {r: 1, g: 0.4, b: 0.7, a: 1}
   trailEndColor: {r: 1, g: 0.8, b: 0.2, a: 0}
   trailTime: 0.4
   trailStartWidth: 0.08
+  gravityScale: 0.3
 --- !u!23 &1237449853092000322
 MeshRenderer:
   m_ObjectHideFlags: 0
