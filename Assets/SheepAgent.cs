@@ -17,20 +17,27 @@ public class SheepAgent : MonoBehaviour
     private float _grazingDuration;
     private bool _initialized = false;
 
-    // ?? Idle Wander ???????????????????????????????????????????????
+    // Idle Wander
     private float _stillTimer = 0f;
     private bool _isIdleWandering = false;
     private float _idleWanderCooldown = 0f;
 
-    // ?? Dirección personal de dispersión ?????????????????????????
+    // Dirección personal de dispersión
     private Vector3 _personalDriftDir = Vector3.zero;
     private float _personalDriftTimer = 0f;
 
-    // ?? Food seeking ??????????????????????????????????????????????
+    // Food seeking
     private FoodSource _targetFood = null;
     private bool _isEating = false;
     private float _eatTimer = 0f;
     private float _eatDuration = 0f;
+
+    // Pasture Grazing (mínima prioridad)
+    private GrassCell _targetCell = null;
+    private bool _isPastureGrazing = false;
+    private bool _isPastureGrazingRegistered = false; // ? nueva
+    private float _pastureGrazeTimer = 0f;
+    private float _pastureGrazeDuration = 0f;
 
     private bool AgentReady => _agent != null
                             && _agent.isActiveAndEnabled
@@ -139,7 +146,6 @@ public class SheepAgent : MonoBehaviour
         _grazingTimer = 0f;
         _stillTimer = 0f;
 
-        // No activar IdleWander inmediatamente — esperar idleRelaxTime en GrazingUpdate
         _isIdleWandering = false;
         _idleWanderCooldown = Random.Range(0f, _flock.idleWanderInterval);
 
@@ -152,7 +158,6 @@ public class SheepAgent : MonoBehaviour
                           > _flock.flockRadius;
         bool calmEnough = Arousal < 0.15f;
 
-        // Acumular tiempo tranquilo hasta idleRelaxTime
         if (!_isIdleWandering)
         {
             if (playerFar && calmEnough)
@@ -170,15 +175,15 @@ public class SheepAgent : MonoBehaviour
             }
         }
 
-        // Desactivar campeo si aparece amenaza
         if (_isIdleWandering && (!playerFar || !calmEnough))
         {
             _isIdleWandering = false;
             _stillTimer = 0f;
             _agent.isStopped = true;
+            StopPastureGrazing();
         }
 
-        // Detectar llegada a fuente de comida
+        // Detectar llegada a fuente de comida (FoodSource)
         if (_targetFood != null && !_isEating)
         {
             float distToFood = Vector3.Distance(transform.position, _targetFood.transform.position);
@@ -226,15 +231,42 @@ public class SheepAgent : MonoBehaviour
     {
         if (_isEating) { EatingUpdate(); return; }
 
+        // ?? PRIORIDAD 1: FoodSource tradicional ??????????????????
+        FoodSource nearestFood = FindBestFood();
+        if (nearestFood != null && _targetFood == null)
+        {
+            StopPastureGrazing();
+            MoveToFood(nearestFood);
+            return;
+        }
+
+        // ?? PRIORIDAD 2: Pastoreo en pradera activo ???????????????
+        if (_isPastureGrazing)
+        {
+            PastureGrazingUpdate();
+            return;
+        }
+
         _idleWanderCooldown -= Time.deltaTime;
         if (_idleWanderCooldown > 0f) return;
 
         _idleWanderCooldown = _flock.idleWanderInterval + Random.Range(-0.3f, 0.8f);
 
-        // Buscar flor/comida prioritaria cercana
-        FoodSource nearestFood = FindBestFood();
-        if (nearestFood != null) { MoveToFood(nearestFood); return; }
+        // ?? PRIORIDAD 3 (mínima): buscar celda de hierba ?????????
+        GrassCell cell = FindBestGrassCell();
+        if (cell != null)
+        {
+            StartPastureGrazing(cell);
+            return;
+        }
 
+        // ?? PRIORIDAD 4: Wander aleatorio original (fallback) ?????
+        DoIdleWanderStep();
+    }
+
+    // Extraído del IdleWanderUpdate original para mantener toda la lógica
+    void DoIdleWanderStep()
+    {
         if (Random.value < 0.25f) { _agent.isStopped = true; return; }
 
         float distFromCentroid = Vector3.Distance(transform.position, _flock.FlockCentroid);
@@ -244,14 +276,12 @@ public class SheepAgent : MonoBehaviour
 
         if (overLimit)
         {
-            // Fuera del radio límite: volver hacia el centroide
             Vector3 backDir = (_flock.FlockCentroid - transform.position).normalized;
             Vector3 randomDir = new Vector3(Random.Range(-1f, 1f), 0f, Random.Range(-1f, 1f)).normalized;
             driftDir = Vector3.Lerp(backDir, randomDir, 0.2f).normalized;
         }
         else
         {
-            // Renovar dirección personal cada 4–7 segundos
             _personalDriftTimer -= Time.deltaTime;
             if (_personalDriftTimer <= 0f || _personalDriftDir == Vector3.zero)
             {
@@ -261,7 +291,6 @@ public class SheepAgent : MonoBehaviour
 
                 if (awayFromCenter.magnitude > 1.5f)
                 {
-                    // Oveja fuera del centro exacto: alejarse con variación perpendicular
                     Vector3 awayDir = awayFromCenter.normalized;
                     Vector3 randPerp = Vector3.Cross(awayDir, Vector3.up).normalized
                                      * Random.Range(-0.6f, 0.6f);
@@ -269,13 +298,11 @@ public class SheepAgent : MonoBehaviour
                 }
                 else
                 {
-                    // Oveja EN el centroide: dirección aleatoria fija garantizada
                     float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
                     _personalDriftDir = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
                 }
             }
 
-            // Bias se reduce cerca del límite (barrera blanda)
             float proximityFactor = Mathf.InverseLerp(_flock.idleMaxSpreadRadius,
                                                        _flock.idleMaxSpreadRadius * 0.6f,
                                                        distFromCentroid);
@@ -309,7 +336,111 @@ public class SheepAgent : MonoBehaviour
     }
 
     // ?????????????????????????????????????????????????????????????
-    // FOOD: búsqueda, movimiento y comer
+    // PASTURE GRAZING (mínima prioridad)
+    // ?????????????????????????????????????????????????????????????
+    GrassCell FindBestGrassCell()
+    {
+        GrassCell best = null;
+        float bestScore = -1f;
+        float radius = _flock.pastureSearchRadius;
+
+        foreach (var zone in PastureZone.AllZones)
+        {
+            var cell = zone.FindBestCell(transform.position, radius);
+            if (cell == null) continue;
+            float d = Vector3.Distance(transform.position, cell.transform.position);
+            float score = cell.grassAmount / Mathf.Max(d, 0.5f);
+            if (score > bestScore) { bestScore = score; best = cell; }
+        }
+        return best;
+    }
+
+    void StartPastureGrazing(GrassCell cell)
+    {
+        // Ya NO llamamos TryStartGrazing() aquí — solo reservamos la referencia
+        _targetCell = cell;
+
+        Vector3 dirToCell = (cell.transform.position - transform.position).normalized;
+        float distToCell = Vector3.Distance(transform.position, cell.transform.position);
+        float stopOffset = Mathf.Min(_flock.pastureStopOffset, distToCell * 0.8f);
+        Vector3 destination = cell.transform.position - dirToCell * stopOffset;
+
+        if (NavMesh.SamplePosition(destination, out NavMeshHit hit, 3f, NavMesh.AllAreas))
+        {
+            _agent.isStopped = false;
+            _agent.speed = _flock.idleWanderSpeed * 0.8f;
+            _agent.SetDestination(hit.position);
+        }
+
+        _isPastureGrazing = true;
+        _pastureGrazeTimer = 0f;
+        _pastureGrazeDuration = Random.Range(_flock.pastureGrazeMinTime, _flock.pastureGrazeMaxTime);
+    }
+
+    void PastureGrazingUpdate()
+    {
+        if (_targetCell == null)
+        {
+            StopPastureGrazing();
+            return;
+        }
+
+        float dist = Vector3.Distance(transform.position, _targetCell.transform.position);
+        bool arrived = dist < 1.5f || (!_agent.pathPending && _agent.remainingDistance < 1.2f);
+
+        if (!arrived) return;
+
+        // ?? Primera vez que llega: registrarse en la celda ???????????
+        if (!_isPastureGrazingRegistered)
+        {
+            // Si la celda ya está agotada o llena de ovejas, buscar otra
+            if (!_targetCell.TryStartGrazing())
+            {
+                StopPastureGrazing();
+                GrassCell next = FindBestGrassCell();
+                if (next != null) StartPastureGrazing(next);
+                return;
+            }
+            _isPastureGrazingRegistered = true;
+        }
+
+        // ?? Ya está comiendo ?????????????????????????????????????????
+        _agent.isStopped = true;
+
+        Vector3 dirToCell = (_targetCell.transform.position - transform.position);
+        dirToCell.y = 0f;
+        if (dirToCell.sqrMagnitude > 0.001f)
+        {
+            Quaternion targetRot = Quaternion.LookRotation(dirToCell.normalized);
+            transform.rotation = Quaternion.RotateTowards(
+                transform.rotation, targetRot,
+                _flock.pastureRotateSpeed * Time.deltaTime
+            );
+        }
+
+        _pastureGrazeTimer += Time.deltaTime;
+        if (_pastureGrazeTimer >= _pastureGrazeDuration)
+        {
+            StopPastureGrazing();
+            GrassCell next = FindBestGrassCell();
+            if (next != null) StartPastureGrazing(next);
+            else _idleWanderCooldown = _flock.idleWanderInterval;
+        }
+    }
+
+    void StopPastureGrazing()
+    {
+        if (_targetCell != null && _isPastureGrazingRegistered)
+            _targetCell.StopGrazing();
+
+        _targetCell = null;
+        _isPastureGrazing = false;
+        _isPastureGrazingRegistered = false;
+        _pastureGrazeTimer = 0f;
+    }
+
+    // ?????????????????????????????????????????????????????????????
+    // FOOD: búsqueda, movimiento y comer (FoodSource original)
     // ?????????????????????????????????????????????????????????????
     FoodSource FindBestFood()
     {
@@ -328,7 +459,6 @@ public class SheepAgent : MonoBehaviour
         return best;
     }
 
-    // Fuerza de atracción suave hacia la mejor flor cercana
     Vector3 CalculateFlowerAttraction(float flowerBiasFactor)
     {
         FoodSource best = null;
@@ -435,6 +565,7 @@ public class SheepAgent : MonoBehaviour
 
         if (_targetFood != null) { _targetFood.Release(); _targetFood = null; }
         _isEating = false;
+        StopPastureGrazing();
 
         if (AgentReady)
         {
@@ -592,6 +723,7 @@ public class SheepAgent : MonoBehaviour
         _animator.SetBool("IsGrazing", CurrentState == SheepState.Grazing);
         _animator.SetBool("IsIdleWandering", _isIdleWandering);
         _animator.SetBool("IsEating", _isEating);
+        _animator.SetBool("IsPastureGrazing", _isPastureGrazing);
     }
 }
 

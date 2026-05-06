@@ -72,6 +72,20 @@ public class FlockManager : MonoBehaviour
     [Tooltip("Radio máximo desde el centroide dentro del que pueden campear")]
     public float idleMaxSpreadRadius = 20f;
 
+    [Header("Pasture Grazing (mínima prioridad)")]
+    [Tooltip("Radio de búsqueda de celdas de hierba alrededor de cada oveja")]
+    public float pastureSearchRadius = 12f;
+    [Tooltip("Tiempo mínimo que una oveja pasa pastando en una celda")]
+    public float pastureGrazeMinTime = 5f;
+    [Tooltip("Tiempo máximo que una oveja pasa pastando en una celda")]
+    public float pastureGrazeMaxTime = 12f;
+
+    [Tooltip("Distancia antes de la celda donde la oveja se detiene a pastar (evita pisarla)")]
+    public float pastureStopOffset = 1.2f;
+
+    [Tooltip("Velocidad de rotación en grados/segundo hacia la celda de hierba")]
+    public float pastureRotateSpeed = 120f;
+
     [HideInInspector] public Vector3 FlockCentroid { get; private set; }
     [HideInInspector] public float FlockSpreadRadius { get; private set; }
 
@@ -127,7 +141,7 @@ public class FlockManager : MonoBehaviour
     {
         if (allSheep.Count == 0) return;
 
-        // Limpiar flores expiradas de la lista automáticamente
+        // Limpiar food sources expiradas automáticamente
         foodSources.RemoveAll(fs => fs == null);
 
         Vector3 sum = Vector3.zero;
@@ -158,6 +172,12 @@ public class FlockManager : MonoBehaviour
 
         Gizmos.color = new Color(1f, 0f, 0f, 0.2f);
         DrawWireCircle(FlockCentroid, antiSplitRadius, 32);
+
+        // Gizmo del radio de búsqueda de praderas
+        Gizmos.color = new Color(0.2f, 0.8f, 0.2f, 0.08f);
+        foreach (var sheep in allSheep)
+            if (sheep != null)
+                Gizmos.DrawWireSphere(sheep.transform.position, pastureSearchRadius);
     }
 
     void DrawWireCircle(Vector3 center, float radius, int segments)
