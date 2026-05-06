@@ -143,16 +143,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6226f2875e904914d91bdb6349d861e4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxSpeedForward: 10
-  maxSpeedReverse: 5
-  accelerationDecel: 8
-  reverseAccelDecel: 4
+  maxSpeedForward: 17
+  accelerationDecel: 20
   brakingDecel: 18
   engineBrakingDecel: 4
   maxTorque: 350
   steeringSpeedFactor: 0.15
   minSteerMultiplier: 0.15
   minSteerSpeed: 3
+  noTurnAtRestSpeed: 0.4
+  lowSpeedSteerMultiplier: 0.2
+  coastingSteerMultiplier: 0.6
+  steerTorqueSmoothing: 8
   lateralFriction: 20
   angularDamping: 10
   carBody: {fileID: 6030141423110387294}
@@ -161,14 +163,21 @@ MonoBehaviour:
   pitchFactor: 0.35
   rollFactor: 0.9
   tiltSmoothness: 5
-  dustLeft: {fileID: 0}
-  dustRight: {fileID: 0}
+  dustLeft: {fileID: 4177126187448744386}
+  dustRight: {fileID: 1371742621047893036}
   dustMinSpeed: 2.5
   dustMaxRate: 45
   accelDustWeight: 1.1
   accelDustMaxSpeed: 15
   turnDustWeight: 0.7
   slipDustWeight: 1.2
+  gearSpeeds:
+  - 8
+  - 14
+  - 23
+  - 30
+  - 40
+  gearText: {fileID: 0}
   inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
 --- !u!1 &1362467129161047060
 GameObject:

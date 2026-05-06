@@ -6,45 +6,45 @@ using TMPro;
 public class PatrolCarController : MonoBehaviour
 {
     [Header("Motor")]
-    [SerializeField] float maxSpeedForward = 10f;
-    [SerializeField] float accelerationDecel = 8f;
-    [SerializeField] float brakingDecel = 10f;
-    [SerializeField] float engineBrakingDecel = 1.5f;
+    [SerializeField] float maxSpeedForward = 63f;
+    [SerializeField] float accelerationDecel = 50f;
+    [SerializeField] float brakingDecel = 63f;
+    [SerializeField] float engineBrakingDecel = 9.5f;
 
     [Header("Steering")]
-    [SerializeField] float maxTorque = 150f;
-    [SerializeField] float steeringSpeedFactor = 0.15f;
+    [SerializeField] float maxTorque = 3000f;
+    [SerializeField] float steeringSpeedFactor = 0.024f;
     [SerializeField] float minSteerMultiplier = 0.15f;
-    [SerializeField] float minSteerSpeed = 1.5f; // velocidad mínima para poder girar
-    [SerializeField] float noTurnAtRestSpeed = 0.35f; // evita girar en su propio eje estando casi quieto
-    [SerializeField] float lowSpeedSteerMultiplier = 0.5f; // reduce giro brusco a muy baja velocidad
+    [SerializeField] float minSteerSpeed = 9.5f; // velocidad mínima para poder girar
+    [SerializeField] float noTurnAtRestSpeed = 2.2f; // evita girar en su propio eje estando casi quieto
+    [SerializeField] float lowSpeedSteerMultiplier = 0.35f; // reduce giro brusco a muy baja velocidad
     [SerializeField] float coastingSteerMultiplier = 0.6f; // reduce giro al soltar acelerador
     [SerializeField] float steerTorqueSmoothing = 6f; // suaviza transiciones bruscas de torque de giro
 
     [Header("Tracción lateral")]
-    [SerializeField] float lateralFriction = 20f;
+    [SerializeField] float lateralFriction = 800f;
     [SerializeField] float angularDamping = 25f;
 
     [Header("Inclinación visual")]
     [SerializeField] Transform carBody;
     [SerializeField] float maxPitchAngle = 8f;
     [SerializeField] float maxRollAngle = 12f;
-    [SerializeField] float pitchFactor = 0.35f;
-    [SerializeField] float rollFactor = 1.2f;
+    [SerializeField] float pitchFactor = 0.056f;
+    [SerializeField] float rollFactor = 0.19f;
     [SerializeField] float tiltSmoothness = 8f;
 
     [Header("Polvo de tierra")]
     [SerializeField] ParticleSystem dustLeft;
     [SerializeField] ParticleSystem dustRight;
-    [SerializeField] float dustMinSpeed = 2.5f;
+    [SerializeField] float dustMinSpeed = 16f;
     [SerializeField] float dustMaxRate = 45f;
     [SerializeField] float accelDustWeight = 1.1f;
-    [SerializeField] float accelDustMaxSpeed = 4f;
+    [SerializeField] float accelDustMaxSpeed = 25f;
     [SerializeField] float turnDustWeight = 0.7f;
     [SerializeField] float slipDustWeight = 1.2f;
 
     [Header("Marchas")]
-    [SerializeField] float[] gearSpeeds = { 5f, 10f, 17f, 25f, 35f };
+    [SerializeField] float[] gearSpeeds = { 31f, 63f, 107f, 157f, 220f };
     [SerializeField] TextMeshProUGUI gearText;
     int currentGear = 0;
 
