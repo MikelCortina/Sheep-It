@@ -314,7 +314,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sheepPrefab: {fileID: 9193411217084776578, guid: 0b2a1828a772c5f42a4e02516078763a, type: 3}
-  flockSize: 1
+  flockSize: 20
   spawnBounds: {x: 20, y: 0, z: 20}
   separationWeight: 1.5
   alignmentWeight: 1
@@ -445,159 +445,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 348557162}
   m_SourcePrefab: {fileID: 100100000, guid: afe82da25e8aab3489440e0dca154018, type: 3}
---- !u!1 &57242932
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 57242938}
-  - component: {fileID: 57242937}
-  - component: {fileID: 57242936}
-  - component: {fileID: 57242935}
-  - component: {fileID: 57242934}
-  - component: {fileID: 57242933}
-  m_Layer: 6
-  m_Name: Cube
-  m_TagString: Player
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!54 &57242933
-Rigidbody:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 57242932}
-  serializedVersion: 4
-  m_Mass: 1
-  m_Drag: 0
-  m_AngularDrag: 0.05
-  m_CenterOfMass: {x: 0, y: 0, z: 0}
-  m_InertiaTensor: {x: 1, y: 1, z: 1}
-  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ImplicitCom: 1
-  m_ImplicitTensor: 1
-  m_UseGravity: 1
-  m_IsKinematic: 0
-  m_Interpolate: 0
-  m_Constraints: 0
-  m_CollisionDetection: 0
---- !u!65 &57242934
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 57242932}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!23 &57242935
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 57242932}
-  m_Enabled: 1
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &57242936
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 57242932}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &57242937
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 57242932}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3e11d3b6caabda64782acc6b6baeb9f6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  moveSpeed: 12.5
-  rotateSpeed: 8
-  acceleration: 8
-  deceleration: 12
---- !u!4 &57242938
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 57242932}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 13.82, y: 2.72, z: 0}
-  m_LocalScale: {x: 4, y: 4, z: 4}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &81242003
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2511,6 +2358,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: PatrolCar
       objectReference: {fileID: 0}
+    - target: {fileID: 464126448647036982, guid: 3305db848b97cc44ab5c3578e89df6f8, type: 3}
+      propertyPath: m_TagString
+      value: Player
+      objectReference: {fileID: 0}
     - target: {fileID: 1826278870285775102, guid: 3305db848b97cc44ab5c3578e89df6f8, type: 3}
       propertyPath: m_LocalScale.x
       value: 2.26
@@ -2569,11 +2420,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5490283714535665485, guid: 3305db848b97cc44ab5c3578e89df6f8, type: 3}
       propertyPath: maxTorque
-      value: 2500
+      value: 550
       objectReference: {fileID: 0}
     - target: {fileID: 5490283714535665485, guid: 3305db848b97cc44ab5c3578e89df6f8, type: 3}
       propertyPath: brakingDecel
-      value: 63
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 5490283714535665485, guid: 3305db848b97cc44ab5c3578e89df6f8, type: 3}
       propertyPath: minSteerSpeed
@@ -2597,31 +2448,43 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5490283714535665485, guid: 3305db848b97cc44ab5c3578e89df6f8, type: 3}
       propertyPath: engineBrakingDecel
-      value: 9.5
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5490283714535665485, guid: 3305db848b97cc44ab5c3578e89df6f8, type: 3}
+      propertyPath: minSteerMultiplier
+      value: 0.3
       objectReference: {fileID: 0}
     - target: {fileID: 5490283714535665485, guid: 3305db848b97cc44ab5c3578e89df6f8, type: 3}
       propertyPath: steeringSpeedFactor
-      value: 0.024
+      value: 0.012
+      objectReference: {fileID: 0}
+    - target: {fileID: 5490283714535665485, guid: 3305db848b97cc44ab5c3578e89df6f8, type: 3}
+      propertyPath: coastingSteerMultiplier
+      value: 0.4
+      objectReference: {fileID: 0}
+    - target: {fileID: 5490283714535665485, guid: 3305db848b97cc44ab5c3578e89df6f8, type: 3}
+      propertyPath: lowSpeedSteerMultiplier
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 5490283714535665485, guid: 3305db848b97cc44ab5c3578e89df6f8, type: 3}
       propertyPath: 'gearSpeeds.Array.data[0]'
-      value: 31
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 5490283714535665485, guid: 3305db848b97cc44ab5c3578e89df6f8, type: 3}
       propertyPath: 'gearSpeeds.Array.data[1]'
-      value: 63
+      value: 20
       objectReference: {fileID: 0}
     - target: {fileID: 5490283714535665485, guid: 3305db848b97cc44ab5c3578e89df6f8, type: 3}
       propertyPath: 'gearSpeeds.Array.data[2]'
-      value: 107
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 5490283714535665485, guid: 3305db848b97cc44ab5c3578e89df6f8, type: 3}
       propertyPath: 'gearSpeeds.Array.data[3]'
-      value: 157
+      value: 40
       objectReference: {fileID: 0}
     - target: {fileID: 5490283714535665485, guid: 3305db848b97cc44ab5c3578e89df6f8, type: 3}
       propertyPath: 'gearSpeeds.Array.data[4]'
-      value: 220
+      value: 50
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -3216,7 +3079,6 @@ SceneRoots:
   - {fileID: 410087041}
   - {fileID: 832575519}
   - {fileID: 136353973}
-  - {fileID: 57242938}
   - {fileID: 21838226}
   - {fileID: 184943222}
   - {fileID: 125801497}
