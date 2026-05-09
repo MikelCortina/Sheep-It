@@ -39,51 +39,51 @@ public class FlockManager : MonoBehaviour
     public float densityStressPanicMult = 0.75f;
 
     [Header("Flock Gravity")]
-    [Tooltip("Fuerza de atracción hacia el centroide del rebaño")]
+    [Tooltip("Fuerza de atracciï¿½n hacia el centroide del rebaï¿½o")]
     public float flockGravityWeight = 1.5f;
-    [Tooltip("Solo actúa si la oveja está a más de esta distancia del centroide")]
+    [Tooltip("Solo actï¿½a si la oveja estï¿½ a mï¿½s de esta distancia del centroide")]
     public float flockGravityRadius = 8f;
-    [Tooltip("Fracción mínima de fuerza cuando está muy cerca (evita colapso)")]
+    [Tooltip("Fracciï¿½n mï¿½nima de fuerza cuando estï¿½ muy cerca (evita colapso)")]
     public float flockGravityFalloff = 0.2f;
-    [Tooltip("Multiplica la gravedad cuando el rebaño está en Fleeing")]
+    [Tooltip("Multiplica la gravedad cuando el rebaï¿½o estï¿½ en Fleeing")]
     public float flockGravityPanicMult = 1.8f;
 
-    [Header("Anti-Split (magnetismo bajo presión)")]
+    [Header("Anti-Split (magnetismo bajo presiï¿½n)")]
     [Tooltip("Distancia del centroide a partir de la cual se activa el magnetismo fuerte")]
     public float antiSplitRadius = 14f;
-    [Tooltip("Fuerza extra de atracción al centroide cuando la oveja se está separando")]
+    [Tooltip("Fuerza extra de atracciï¿½n al centroide cuando la oveja se estï¿½ separando")]
     public float antiSplitWeight = 3.5f;
-    [Tooltip("Solo actúa si el Arousal supera este valor")]
+    [Tooltip("Solo actï¿½a si el Arousal supera este valor")]
     [Range(0f, 1f)]
     public float antiSplitArousalThreshold = 0.4f;
 
     [Header("Idle Wander (Campeo relajado)")]
     [Tooltip("Segundos quieta antes de dispersarse (0 = inmediato al entrar en Grazing)")]
     public float idleRelaxTime = 0f;
-    [Tooltip("Radio máximo de cada paso de campeo desde la posición actual")]
+    [Tooltip("Radio mï¿½ximo de cada paso de campeo desde la posiciï¿½n actual")]
     public float idleWanderRadius = 10f;
     [Tooltip("Velocidad al campear")]
     public float idleWanderSpeed = 1.0f;
     [Tooltip("Segundos base entre cada pasito de campeo")]
     public float idleWanderInterval = 1.2f;
-    [Tooltip("Cuánto tiende la oveja a alejarse del centroide (0=aleatorio puro, 1=siempre se aleja)")]
+    [Tooltip("Cuï¿½nto tiende la oveja a alejarse del centroide (0=aleatorio puro, 1=siempre se aleja)")]
     [Range(0f, 1f)]
     public float idleSpreadBias = 0.75f;
-    [Tooltip("Radio máximo desde el centroide dentro del que pueden campear")]
+    [Tooltip("Radio mï¿½ximo desde el centroide dentro del que pueden campear")]
     public float idleMaxSpreadRadius = 20f;
 
-    [Header("Pasture Grazing (mínima prioridad)")]
-    [Tooltip("Radio de búsqueda de celdas de hierba alrededor de cada oveja")]
+    [Header("Pasture Grazing (mï¿½nima prioridad)")]
+    [Tooltip("Radio de bï¿½squeda de celdas de hierba alrededor de cada oveja")]
     public float pastureSearchRadius = 12f;
-    [Tooltip("Tiempo mínimo que una oveja pasa pastando en una celda")]
+    [Tooltip("Tiempo mï¿½nimo que una oveja pasa pastando en una celda")]
     public float pastureGrazeMinTime = 5f;
-    [Tooltip("Tiempo máximo que una oveja pasa pastando en una celda")]
+    [Tooltip("Tiempo mï¿½ximo que una oveja pasa pastando en una celda")]
     public float pastureGrazeMaxTime = 12f;
 
     [Tooltip("Distancia antes de la celda donde la oveja se detiene a pastar (evita pisarla)")]
     public float pastureStopOffset = 1.2f;
 
-    [Tooltip("Velocidad de rotación en grados/segundo hacia la celda de hierba")]
+    [Tooltip("Velocidad de rotaciï¿½n en grados/segundo hacia la celda de hierba")]
     public float pastureRotateSpeed = 120f;
 
     [HideInInspector] public Vector3 FlockCentroid { get; private set; }
@@ -93,12 +93,17 @@ public class FlockManager : MonoBehaviour
     [HideInInspector] public List<SheepAgent> allSheep = new();
     [HideInInspector] public List<FoodSource> foodSources = new();
 
+    public void SetPlayerTarget(Transform newTarget)
+    {
+        playerTransform = newTarget;
+    }
+
     void Start()
     {
         var player = GameObject.FindGameObjectWithTag("Player");
         if (player == null)
         {
-            Debug.LogError("[FlockManager] No se encontró ningún objeto con tag 'Player'.");
+            Debug.LogError("[FlockManager] No se encontrï¿½ ningï¿½n objeto con tag 'Player'.");
             return;
         }
         playerTransform = player.transform;
@@ -132,7 +137,7 @@ public class FlockManager : MonoBehaviour
 
         if (spawned < flockSize)
             Debug.LogWarning($"[FlockManager] Solo se spawnearon {spawned}/{flockSize} ovejas. " +
-                             "Amplía el NavMesh o mueve el FlockManager a una zona navegable.");
+                             "Amplï¿½a el NavMesh o mueve el FlockManager a una zona navegable.");
 
         foodSources.AddRange(FindObjectsByType<FoodSource>(FindObjectsSortMode.None));
     }
@@ -141,7 +146,7 @@ public class FlockManager : MonoBehaviour
     {
         if (allSheep.Count == 0) return;
 
-        // Limpiar food sources expiradas automáticamente
+        // Limpiar food sources expiradas automï¿½ticamente
         foodSources.RemoveAll(fs => fs == null);
 
         Vector3 sum = Vector3.zero;
@@ -173,7 +178,7 @@ public class FlockManager : MonoBehaviour
         Gizmos.color = new Color(1f, 0f, 0f, 0.2f);
         DrawWireCircle(FlockCentroid, antiSplitRadius, 32);
 
-        // Gizmo del radio de búsqueda de praderas
+        // Gizmo del radio de bï¿½squeda de praderas
         Gizmos.color = new Color(0.2f, 0.8f, 0.2f, 0.08f);
         foreach (var sheep in allSheep)
             if (sheep != null)

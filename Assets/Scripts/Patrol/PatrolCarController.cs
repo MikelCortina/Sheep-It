@@ -7,6 +7,7 @@ public class PatrolCarController : MonoBehaviour
 {
     [Header("Motor")]
     [SerializeField] float maxSpeedForward = 63f;
+    [SerializeField] float maxSpeedReverse = 20f;
     [SerializeField] float accelerationDecel = 50f;
     [SerializeField] float brakingDecel = 63f;
     [SerializeField] float engineBrakingDecel = 9.5f;
@@ -80,10 +81,10 @@ public class PatrolCarController : MonoBehaviour
         if (Keyboard.current.eKey.wasPressedThisFrame)
             currentGear = Mathf.Min(currentGear + 1, gearSpeeds.Length - 1);
         if (Keyboard.current.qKey.wasPressedThisFrame)
-            currentGear = Mathf.Max(currentGear - 1, 0);
+            currentGear = Mathf.Max(currentGear - 1, -1); // -1 = marcha atrás
 
         if (gearText != null)
-            gearText.text = $"MARCHA  {currentGear + 1}";
+            gearText.text = currentGear == -1 ? "MARCHA  R" : $"MARCHA  {currentGear + 1}";
     }
 
     void FixedUpdate()
@@ -122,6 +123,26 @@ public class PatrolCarController : MonoBehaviour
 
         bool pressingS = throttle < -0.1f;
         bool pressingW = throttle > 0.1f;
+
+        if (currentGear == -1) // Marcha atrás
+        {
+            if (pressingW)
+            {
+                // Acelerar hacia atrás (localVelZ negativo)
+                float target = localVelZ > 0.15f ? 0f : -maxSpeedReverse;
+                float rate   = localVelZ > 0.15f ? brakingDecel : accelerationDecel;
+                SetForwardVelocity(Mathf.MoveTowards(localVelZ, target, rate * Time.fixedDeltaTime));
+            }
+            else if (pressingS)
+            {
+                SetForwardVelocity(Mathf.MoveTowards(localVelZ, 0f, brakingDecel * Time.fixedDeltaTime));
+            }
+            else
+            {
+                SetForwardVelocity(Mathf.MoveTowards(localVelZ, 0f, engineBrakingDecel * Time.fixedDeltaTime));
+            }
+            return;
+        }
 
         if (pressingW)
         {
@@ -261,5 +282,10 @@ public class PatrolCarController : MonoBehaviour
             Vector3.zero,
             angularDamping * Time.fixedDeltaTime
         );
+    }
+
+    public float GetSpeed()
+    {
+        return currentSpeed;
     }
 }
