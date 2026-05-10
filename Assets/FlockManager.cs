@@ -29,9 +29,16 @@ public class FlockManager : MonoBehaviour
     public float arousalDecayTime = 25f;
     public float arousalRiseSpeed = 5f;
 
-    [Header("State Thresholds")]
+    [Header("State Thresholds — Player (a pie)")]
     public float fleeRadius = 6f;
     public float flockRadius = 12f;
+
+    [Header("State Thresholds — Coche")]
+    public float fleeRadiusCar = 10f;
+    public float flockRadiusCar = 18f;
+
+    public string PlayerTargetTag =>
+    playerTransform != null ? playerTransform.tag : "Player";
 
     [Header("Density Stress")]
     public float densityStressRadius = 3f;
@@ -99,11 +106,21 @@ public class FlockManager : MonoBehaviour
     }
 
     void Start()
-    {
-        var player = GameObject.FindGameObjectWithTag("Player");
+    {// DESPUÉS — busca también en objetos inactivos
+        var allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+        GameObject player = null;
+        foreach (var go in allObjects)
+        {
+            if (go.CompareTag("Player") && go.scene.IsValid())
+            {
+                player = go;
+                break;
+            }
+        }
+
         if (player == null)
         {
-            Debug.LogError("[FlockManager] No se encontr� ning�n objeto con tag 'Player'.");
+            Debug.LogError("[FlockManager] No se encontró ningún objeto con tag 'Player'.");
             return;
         }
         playerTransform = player.transform;

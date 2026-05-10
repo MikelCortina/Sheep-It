@@ -328,8 +328,10 @@ MonoBehaviour:
   maxSpeed: 5
   arousalDecayTime: 5
   arousalRiseSpeed: 5
-  fleeRadius: 50
-  flockRadius: 50
+  fleeRadius: 25
+  flockRadius: 25
+  fleeRadiusCar: 50
+  flockRadiusCar: 50
   densityStressRadius: 4
   densityStressThreshold: 0.4
   densityStressPanicMult: 0.5
@@ -337,9 +339,9 @@ MonoBehaviour:
   flockGravityRadius: 10
   flockGravityFalloff: 0.4
   flockGravityPanicMult: 1.2
-  antiSplitRadius: 14
-  antiSplitWeight: 3.5
-  antiSplitArousalThreshold: 0.4
+  antiSplitRadius: 9
+  antiSplitWeight: 7
+  antiSplitArousalThreshold: 0.2
   idleRelaxTime: 18
   idleWanderRadius: 20
   idleWanderSpeed: 10
@@ -762,7 +764,7 @@ GameObject:
   - component: {fileID: 198085674}
   m_Layer: 0
   m_Name: PlayerOnFoot
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1976,7 +1978,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 464126448647036982, guid: 3305db848b97cc44ab5c3578e89df6f8, type: 3}
       propertyPath: m_TagString
-      value: Player
+      value: Coche
       objectReference: {fileID: 0}
     - target: {fileID: 1826278870285775102, guid: 3305db848b97cc44ab5c3578e89df6f8, type: 3}
       propertyPath: m_LocalScale.x
