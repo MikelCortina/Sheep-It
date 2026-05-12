@@ -46,10 +46,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   grassAmount: 1
-  consumeRate: 0.04
+  consumeRate: 1
   regenRate: 0
-  minGrassToGraze: 0.2
+  minGrassToGraze: 0.05
   detectionRadius: 25
+  maxSheepEating: 1
   grassRenderer: {fileID: 6579653655671352166}
   fullColor: {r: 0.2, g: 0.7, b: 0.1, a: 1}
   emptyColor: {r: 0.55, g: 0.45, b: 0.2, a: 1}

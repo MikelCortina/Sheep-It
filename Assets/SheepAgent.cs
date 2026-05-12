@@ -32,9 +32,23 @@ public class SheepAgent : MonoBehaviour
 
     private GrassCell _targetCell = null;
     private bool _isPastureGrazing = false;
+    private bool _hasGrassReservation = false;
     private bool _isPastureGrazingRegistered = false;
     private float _pastureGrazeTimer = 0f;
     private float _pastureGrazeDuration = 0f;
+
+    private float _grassDecisionLockTimer = 0f;
+    private float _grassDecisionLockDuration = 2.5f;
+
+    private float _grassRepathTimer = 0f;
+    private float _grassRepathInterval = 0.75f;
+
+    private float _grassTravelTimer = 0f;
+    private float _grassMaxTravelTime = 6f;
+
+    private float _personalDecisionMultiplier = 1f;
+    private float _personalRepathMultiplier = 1f;
+    private float _personalTravelMultiplier = 1f;
 
     private Transform _externalThreat;
     private float _externalThreatTimer = 0f;
@@ -73,6 +87,10 @@ public class SheepAgent : MonoBehaviour
         float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
         _personalDriftDir = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
         _personalDriftTimer = Random.Range(0f, 5f);
+
+        _personalDecisionMultiplier = Random.Range(0.8f, 1.35f);
+        _personalRepathMultiplier = Random.Range(0.75f, 1.45f);
+        _personalTravelMultiplier = Random.Range(0.85f, 1.3f);
     }
 
     void Update()
@@ -112,6 +130,16 @@ public class SheepAgent : MonoBehaviour
         else
         {
             _socialPanicDirection = Vector3.zero;
+        }
+
+        if (_grassDecisionLockTimer > 0f)
+        {
+            _grassDecisionLockTimer -= Time.deltaTime;
+        }
+
+        if (_grassRepathTimer > 0f)
+        {
+            _grassRepathTimer -= Time.deltaTime;
         }
 
         UpdateArousal(distToPlayer);
@@ -505,14 +533,20 @@ public class SheepAgent : MonoBehaviour
         float bestScore = -1f;
         float radius = _flock.pastureSearchRadius;
 
-        foreach (var zone in PastureZone.AllZones)
+        foreach (GrassCell cell in GrassCell.AllCells)
         {
-            var cell = zone.FindBestCell(transform.position, radius);
-
             if (cell == null) continue;
+            if (!cell.CanBeReserved) continue;
 
             float d = Vector3.Distance(transform.position, cell.transform.position);
-            float score = cell.grassAmount / Mathf.Max(d, 0.5f);
+
+            if (d > radius) continue;
+            if (d > cell.detectionRadius) continue;
+
+            float distanceScore = cell.grassAmount / Mathf.Max(d, 0.5f);
+            float freeSlotBonus = 1f - cell.Occupancy01;
+
+            float score = distanceScore + freeSlotBonus * 2f;
 
             if (score > bestScore)
             {
@@ -526,7 +560,20 @@ public class SheepAgent : MonoBehaviour
 
     void StartPastureGrazing(GrassCell cell)
     {
+        if (cell == null) return;
+
+        if (!cell.TryReserve())
+        {
+            return;
+        }
+
         _targetCell = cell;
+        _hasGrassReservation = true;
+        _isPastureGrazingRegistered = false;
+        _isPastureGrazing = true;
+
+        _grassDecisionLockTimer = _grassDecisionLockDuration * _personalDecisionMultiplier;
+        _grassTravelTimer = 0f;
 
         Vector3 dirToCell = (cell.transform.position - transform.position).normalized;
         float distToCell = Vector3.Distance(transform.position, cell.transform.position);
@@ -539,12 +586,11 @@ public class SheepAgent : MonoBehaviour
             _agent.speed = _flock.idleWanderSpeed * 0.8f;
             _agent.SetDestination(hit.position);
         }
-
-        _isPastureGrazing = true;
-        _pastureGrazeTimer = 0f;
-        _pastureGrazeDuration = Random.Range(_flock.pastureGrazeMinTime, _flock.pastureGrazeMaxTime);
+        else
+        {
+            StopPastureGrazing();
+        }
     }
-
     void PastureGrazingUpdate()
     {
         if (_targetCell == null)
@@ -553,27 +599,40 @@ public class SheepAgent : MonoBehaviour
             return;
         }
 
+        _grassTravelTimer += Time.deltaTime;
+
+        if (!_targetCell.IsGrazeable)
+        {
+            StopPastureGrazing();
+            TryFindNewGrassWithCooldown();
+            return;
+        }
+
         float dist = Vector3.Distance(transform.position, _targetCell.transform.position);
         bool arrived = dist < 1.5f || (!_agent.pathPending && _agent.remainingDistance < 1.2f);
 
-        if (!arrived) return;
+        if (!arrived)
+        {
+            if (_grassTravelTimer > _grassMaxTravelTime * _personalTravelMultiplier && _grassDecisionLockTimer <= 0f)
+            {
+                StopPastureGrazing();
+                TryFindNewGrassWithCooldown();
+                return;
+            }
+
+            return;
+        }
 
         if (!_isPastureGrazingRegistered)
         {
             if (!_targetCell.TryStartGrazing())
             {
                 StopPastureGrazing();
-
-                GrassCell next = FindBestGrassCell();
-
-                if (next != null)
-                {
-                    StartPastureGrazing(next);
-                }
-
+                TryFindNewGrassWithCooldown();
                 return;
             }
 
+            _hasGrassReservation = false;
             _isPastureGrazingRegistered = true;
         }
 
@@ -592,36 +651,48 @@ public class SheepAgent : MonoBehaviour
                 _flock.pastureRotateSpeed * Time.deltaTime
             );
         }
+    }
 
-        _pastureGrazeTimer += Time.deltaTime;
-
-        if (_pastureGrazeTimer >= _pastureGrazeDuration)
+    void TryFindNewGrassWithCooldown()
+    {
+        if (_grassRepathTimer > 0f)
         {
-            StopPastureGrazing();
+            _idleWanderCooldown = _flock.idleWanderInterval;
+            return;
+        }
 
-            GrassCell next = FindBestGrassCell();
+        _grassRepathTimer = _grassRepathInterval * _personalRepathMultiplier;
 
-            if (next != null)
-            {
-                StartPastureGrazing(next);
-            }
-            else
-            {
-                _idleWanderCooldown = _flock.idleWanderInterval;
-            }
+        GrassCell next = FindBestGrassCell();
+
+        if (next != null)
+        {
+            StartPastureGrazing(next);
+        }
+        else
+        {
+            _idleWanderCooldown = _flock.idleWanderInterval;
         }
     }
 
     void StopPastureGrazing()
     {
-        if (_targetCell != null && _isPastureGrazingRegistered)
+        if (_targetCell != null)
         {
-            _targetCell.StopGrazing();
+            if (_isPastureGrazingRegistered)
+            {
+                _targetCell.StopGrazing();
+            }
+            else if (_hasGrassReservation)
+            {
+                _targetCell.CancelReservation();
+            }
         }
 
         _targetCell = null;
         _isPastureGrazing = false;
         _isPastureGrazingRegistered = false;
+        _hasGrassReservation = false;
         _pastureGrazeTimer = 0f;
     }
 
