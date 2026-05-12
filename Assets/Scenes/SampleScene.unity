@@ -327,7 +327,7 @@ MonoBehaviour:
   minSpeed: 2.5
   maxSpeed: 5
   arousalDecayTime: 5
-  arousalRiseSpeed: 5
+  arousalRiseSpeed: 10
   fleeRadius: 50
   flockRadius: 50
   densityStressRadius: 4
@@ -341,7 +341,7 @@ MonoBehaviour:
   antiSplitWeight: 3.5
   antiSplitArousalThreshold: 0.4
   idleRelaxTime: 18
-  idleWanderRadius: 20
+  idleWanderRadius: 4
   idleWanderSpeed: 10
   idleWanderInterval: 1
   idleSpreadBias: 0.85
@@ -351,6 +351,11 @@ MonoBehaviour:
   pastureGrazeMaxTime: 12
   pastureStopOffset: 5
   pastureRotateSpeed: 120
+  panicSpeedMultiplier: 1.8
+  panicSeparationMultiplier: 2.5
+  panicDispersionMultiplier: 2.2
+  postPanicCohesionMultiplier: 2
+  postPanicArousalThreshold: 0.45
   playerTransform: {fileID: 0}
   allSheep: []
   foodSources: []
@@ -822,6 +827,68 @@ MonoBehaviour:
   m_MinRegionArea: 2
   m_NavMeshData: {fileID: 23800000, guid: 8d64deb94ed9e6f469459a4abc404774, type: 2}
   m_BuildHeightMesh: 0
+--- !u!1 &231202996
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 231202997}
+  m_Layer: 0
+  m_Name: WolfExit_North
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &231202997
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 231202996}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 44.9, y: 0, z: 77.86903}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &305748966
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 305748967}
+  m_Layer: 0
+  m_Name: WolfSpawn_North (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &305748967
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 305748966}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 4.3, y: 5.7165604, z: 214.6}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &316097672 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: afe82da25e8aab3489440e0dca154018, type: 3}
@@ -1769,6 +1836,37 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 5043391133208602268, guid: 7813586d72efb934a9e5f923ce10057f, type: 3}
   m_PrefabInstance: {fileID: 542930653}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1034534325
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1034534326}
+  m_Layer: 0
+  m_Name: WolfExit_North (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1034534326
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1034534325}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -68.54, y: 0, z: 77.86903}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1041140193
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2558,6 +2656,65 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 6149025633579523384, guid: afe82da25e8aab3489440e0dca154018, type: 3}
+--- !u!1 &1702829737
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1702829739}
+  - component: {fileID: 1702829738}
+  m_Layer: 0
+  m_Name: WolfSpawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1702829738
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1702829737}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: debdb9ce6dc588f41b954ea8b71de982, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  wolfPrefab: {fileID: 1098743012334952378, guid: 42b72fceccbdf5b4ab26fbd9f4c7cb59, type: 3}
+  flockManager: {fileID: 21838225}
+  spawnPoints:
+  - {fileID: 2030181427}
+  - {fileID: 305748967}
+  exitPoints:
+  - {fileID: 231202997}
+  - {fileID: 1034534326}
+  spawnOnStart: 1
+  firstSpawnDelay: 5
+  repeatSpawns: 0
+  repeatSpawnInterval: 25
+  maxWolvesAlive: 1
+  logDebug: 1
+  manualSpawnKey: 108
+--- !u!4 &1702829739
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1702829737}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -13.698369, y: 5.7165604, z: 189.95895}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1749142230
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2774,6 +2931,37 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 6149025633579523384, guid: afe82da25e8aab3489440e0dca154018, type: 3}
+--- !u!1 &2030181426
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2030181427}
+  m_Layer: 0
+  m_Name: WolfSpawn_North
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2030181427
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2030181426}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -69.4, y: 5.7165604, z: 214.6}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &2080162087
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3090,3 +3278,8 @@ SceneRoots:
   - {fileID: 2119483804}
   - {fileID: 966757573}
   - {fileID: 1541163801}
+  - {fileID: 1702829739}
+  - {fileID: 2030181427}
+  - {fileID: 305748967}
+  - {fileID: 231202997}
+  - {fileID: 1034534326}
