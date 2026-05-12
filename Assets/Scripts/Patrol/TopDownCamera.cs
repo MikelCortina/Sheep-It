@@ -41,4 +41,9 @@ public class TopDownCamera : MonoBehaviour
         transform.position = Vector3.Lerp(transform.position, desiredPos, followSmoothness * Time.deltaTime);
         transform.rotation = currentRotation;
     }
+
+    public void SetTarget(Transform newTarget)
+    {
+        target = newTarget;
+    }
 }

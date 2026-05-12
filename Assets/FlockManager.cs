@@ -29,9 +29,16 @@ public class FlockManager : MonoBehaviour
     public float arousalDecayTime = 25f;
     public float arousalRiseSpeed = 5f;
 
-    [Header("State Thresholds")]
+    [Header("State Thresholds â€” Player (a pie)")]
     public float fleeRadius = 6f;
     public float flockRadius = 12f;
+
+    [Header("State Thresholds â€” Coche")]
+    public float fleeRadiusCar = 10f;
+    public float flockRadiusCar = 18f;
+
+    public string PlayerTargetTag =>
+    playerTransform != null ? playerTransform.tag : "Player";
 
     [Header("Density Stress")]
     public float densityStressRadius = 3f;
@@ -39,26 +46,26 @@ public class FlockManager : MonoBehaviour
     public float densityStressPanicMult = 0.75f;
 
     [Header("Flock Gravity")]
-    [Tooltip("Fuerza de atracción hacia el centroide del rebaño")]
+    [Tooltip("Fuerza de atracciï¿½n hacia el centroide del rebaï¿½o")]
     public float flockGravityWeight = 1.5f;
 
-    [Tooltip("Solo actúa si la oveja está a más de esta distancia del centroide")]
+    [Tooltip("Solo actï¿½a si la oveja estï¿½ a mï¿½s de esta distancia del centroide")]
     public float flockGravityRadius = 8f;
 
-    [Tooltip("Fracción mínima de fuerza cuando está muy cerca")]
+    [Tooltip("Fracciï¿½n mï¿½nima de fuerza cuando estï¿½ muy cerca")]
     public float flockGravityFalloff = 0.2f;
 
-    [Tooltip("Multiplica la gravedad cuando el rebaño está en Fleeing")]
+    [Tooltip("Multiplica la gravedad cuando el rebaï¿½o estï¿½ en Fleeing")]
     public float flockGravityPanicMult = 1.8f;
 
     [Header("Anti-Split")]
     [Tooltip("Distancia del centroide a partir de la cual se activa el magnetismo fuerte")]
     public float antiSplitRadius = 14f;
 
-    [Tooltip("Fuerza extra de atracción al centroide cuando la oveja se está separando")]
+    [Tooltip("Fuerza extra de atracciï¿½n al centroide cuando la oveja se estï¿½ separando")]
     public float antiSplitWeight = 3.5f;
 
-    [Tooltip("Solo actúa si el Arousal supera este valor")]
+    [Tooltip("Solo actï¿½a si el Arousal supera este valor")]
     [Range(0f, 1f)]
     public float antiSplitArousalThreshold = 0.4f;
 
@@ -66,7 +73,7 @@ public class FlockManager : MonoBehaviour
     [Tooltip("Segundos quieta antes de dispersarse")]
     public float idleRelaxTime = 0f;
 
-    [Tooltip("Radio máximo de cada paso de campeo desde la posición actual")]
+    [Tooltip("Radio mï¿½ximo de cada paso de campeo desde la posiciï¿½n actual")]
     public float idleWanderRadius = 10f;
 
     [Tooltip("Velocidad al campear")]
@@ -75,27 +82,27 @@ public class FlockManager : MonoBehaviour
     [Tooltip("Segundos base entre cada paso de campeo")]
     public float idleWanderInterval = 1.2f;
 
-    [Tooltip("Cuánto tiende la oveja a alejarse del centroide")]
+    [Tooltip("Cuï¿½nto tiende la oveja a alejarse del centroide")]
     [Range(0f, 1f)]
     public float idleSpreadBias = 0.75f;
 
-    [Tooltip("Radio máximo desde el centroide dentro del que pueden campear")]
+    [Tooltip("Radio mï¿½ximo desde el centroide dentro del que pueden campear")]
     public float idleMaxSpreadRadius = 20f;
 
     [Header("Pasture Grazing")]
-    [Tooltip("Radio de búsqueda de celdas de hierba alrededor de cada oveja")]
+    [Tooltip("Radio de bï¿½squeda de celdas de hierba alrededor de cada oveja")]
     public float pastureSearchRadius = 12f;
 
-    [Tooltip("Tiempo mínimo que una oveja pasa pastando en una celda")]
+    [Tooltip("Tiempo mï¿½nimo que una oveja pasa pastando en una celda")]
     public float pastureGrazeMinTime = 5f;
 
-    [Tooltip("Tiempo máximo que una oveja pasa pastando en una celda")]
+    [Tooltip("Tiempo mï¿½ximo que una oveja pasa pastando en una celda")]
     public float pastureGrazeMaxTime = 12f;
 
     [Tooltip("Distancia antes de la celda donde la oveja se detiene a pastar")]
     public float pastureStopOffset = 1.2f;
 
-    [Tooltip("Velocidad de rotación en grados/segundo hacia la celda de hierba")]
+    [Tooltip("Velocidad de rotaciï¿½n en grados/segundo hacia la celda de hierba")]
     public float pastureRotateSpeed = 120f;
 
     [Header("Panic Behaviour")]
@@ -112,13 +119,27 @@ public class FlockManager : MonoBehaviour
     [HideInInspector] public List<SheepAgent> allSheep = new();
     [HideInInspector] public List<FoodSource> foodSources = new();
 
-    void Start()
+    public void SetPlayerTarget(Transform newTarget)
     {
-        var player = GameObject.FindGameObjectWithTag("Player");
+        playerTransform = newTarget;
+    }
+
+    void Start()
+    {// DESPUÃ‰S â€” busca tambiÃ©n en objetos inactivos
+        var allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
+        GameObject player = null;
+        foreach (var go in allObjects)
+        {
+            if (go.CompareTag("Player") && go.scene.IsValid())
+            {
+                player = go;
+                break;
+            }
+        }
 
         if (player == null)
         {
-            Debug.LogError("[FlockManager] No se encontró ningún objeto con tag 'Player'.");
+            Debug.LogError("[FlockManager] No se encontrÃ³ ningÃºn objeto con tag 'Player'.");
             return;
         }
 
@@ -159,7 +180,7 @@ public class FlockManager : MonoBehaviour
         {
             Debug.LogWarning(
                 $"[FlockManager] Solo se spawnearon {spawned}/{flockSize} ovejas. " +
-                "Amplía el NavMesh o mueve el FlockManager a una zona navegable."
+                "Amplï¿½a el NavMesh o mueve el FlockManager a una zona navegable."
             );
         }
 
