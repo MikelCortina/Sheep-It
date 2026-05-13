@@ -893,8 +893,8 @@ MonoBehaviour:
   arousalRiseSpeed: 5
   fleeRadius: 25
   flockRadius: 25
-  fleeRadiusCar: 10
-  flockRadiusCar: 18
+  fleeRadiusCar: 50
+  flockRadiusCar: 50
   densityStressRadius: 4
   densityStressThreshold: 0.4
   densityStressPanicMult: 0.5
