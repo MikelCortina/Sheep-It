@@ -64,6 +64,9 @@ public class SheepAgent : MonoBehaviour
                             && _agent.isActiveAndEnabled
                             && _agent.isOnNavMesh;
 
+    private bool HasWolfThreat => _externalThreat != null && _externalThreatTimer > 0f;
+    private bool HasWolfPanic => HasWolfThreat || _socialPanicTimer > 0f;
+
     private float FleeRadius => _flock.PlayerTargetTag == "Coche"
         ? _flock.fleeRadiusCar
         : _flock.fleeRadius;
@@ -226,11 +229,11 @@ public class SheepAgent : MonoBehaviour
 
     void UpdateArousal(float distToPlayer)
     {
-        bool playerThreat = distToPlayer < FleeRadius;
-        bool externalThreat = _externalThreat != null && _externalThreatTimer > 0f;
-        bool socialPanic = _socialPanicTimer > 0f;
+        bool playerOrCarThreat = distToPlayer < FleeRadius;
+        bool wolfThreat = HasWolfThreat;
+        bool wolfSocialPanic = _socialPanicTimer > 0f;
 
-        if (playerThreat || externalThreat || socialPanic)
+        if (playerOrCarThreat || wolfThreat || wolfSocialPanic)
         {
             Arousal = Mathf.MoveTowards(Arousal, 1f, Time.deltaTime * _flock.arousalRiseSpeed);
         }
@@ -239,13 +242,14 @@ public class SheepAgent : MonoBehaviour
             Arousal = Mathf.MoveTowards(Arousal, 0f, Time.deltaTime / _flock.arousalDecayTime);
         }
 
+        // Contagio social SOLO si viene del lobo, no del coche.
         foreach (var other in _flock.allSheep)
         {
             if (other == null || other == this) continue;
 
             float d = Vector3.Distance(transform.position, other.transform.position);
 
-            if (d < _flock.separationRadius * 3f && other.Arousal > 0.7f)
+            if (d < _flock.separationRadius * 3f && other.HasWolfPanic && other.Arousal > 0.7f)
             {
                 Arousal = Mathf.MoveTowards(
                     Arousal,
@@ -276,7 +280,7 @@ public class SheepAgent : MonoBehaviour
         switch (CurrentState)
         {
             case SheepState.Grazing:
-                if (distToPlayer < FleeRadius || _externalThreat != null || _socialPanicTimer > 0f || Arousal > 0.75f)
+                if (HasWolfPanic || distToPlayer < FleeRadius)
                 {
                     SetFleeing();
                     return;
@@ -292,7 +296,7 @@ public class SheepAgent : MonoBehaviour
                 break;
 
             case SheepState.Flocking:
-                if (distToPlayer < FleeRadius || _externalThreat != null || _socialPanicTimer > 0f || Arousal > 0.75f)
+                if (HasWolfPanic || distToPlayer < FleeRadius)
                 {
                     SetFleeing();
                     return;
@@ -308,7 +312,14 @@ public class SheepAgent : MonoBehaviour
                 break;
 
             case SheepState.Fleeing:
-                if (_externalThreat == null && _socialPanicTimer <= 0f && distToPlayer > FleeRadius + 2f && Arousal < 0.35f)
+                if (!HasWolfPanic && distToPlayer > FleeRadius + 2f && Arousal < 0.5f)
+                {
+                    _agent.speed = _flock.minSpeed + 1f;
+                    SetFlocking();
+                    return;
+                }
+
+                if (HasWolfPanic && _externalThreat == null && _socialPanicTimer <= 0f && Arousal < 0.35f)
                 {
                     _agent.speed = _flock.minSpeed + 1f;
                     SetFlocking();
@@ -865,18 +876,25 @@ public class SheepAgent : MonoBehaviour
         if (AgentReady)
         {
             _agent.isStopped = false;
-            _agent.speed = _flock.maxSpeed * _flock.panicSpeedMultiplier;
+
+            if (HasWolfPanic)
+            {
+                _agent.speed = _flock.maxSpeed * _flock.panicSpeedMultiplier;
+            }
+            else
+            {
+                _agent.speed = _flock.maxSpeed * 1.3f;
+            }
         }
     }
 
     void FleeingUpdate()
     {
-        Vector3 fleeDir = Vector3.zero;
+        Vector3 fleeDir;
 
-        if (_externalThreat != null)
+        if (HasWolfThreat)
         {
-            Vector3 threatPosition = _externalThreat.position;
-            fleeDir = transform.position - threatPosition;
+            fleeDir = transform.position - _externalThreat.position;
         }
         else if (_socialPanicDirection != Vector3.zero)
         {
@@ -884,8 +902,7 @@ public class SheepAgent : MonoBehaviour
         }
         else
         {
-            Vector3 threatPosition = _flock.playerTransform.position;
-            fleeDir = transform.position - threatPosition;
+            fleeDir = transform.position - _flock.playerTransform.position;
         }
 
         fleeDir.y = 0f;
@@ -904,20 +921,28 @@ public class SheepAgent : MonoBehaviour
         float flowerBias = Mathf.Lerp(0.15f, 0f, Arousal);
         Vector3 flowerForce = CalculateFlowerAttraction(flowerBias);
 
-        float panicFactor = Mathf.InverseLerp(0.3f, 1f, Arousal);
-        float dynFleeWeight = _flock.fleeWeight * Arousal * Mathf.Lerp(1f, 1.8f, panicFactor);
-
+        float dynFleeWeight;
         Vector3 panicScatter = Vector3.zero;
 
-        if (Arousal > 0.6f)
+        if (HasWolfPanic)
         {
-            Vector3 awayFromCenter = transform.position - _flock.FlockCentroid;
-            awayFromCenter.y = 0f;
+            float panicFactor = Mathf.InverseLerp(0.3f, 1f, Arousal);
+            dynFleeWeight = _flock.fleeWeight * Arousal * Mathf.Lerp(1f, 1.8f, panicFactor);
 
-            if (awayFromCenter.sqrMagnitude > 0.01f)
+            if (Arousal > 0.6f)
             {
-                panicScatter = awayFromCenter.normalized * _flock.panicDispersionMultiplier;
+                Vector3 awayFromCenter = transform.position - _flock.FlockCentroid;
+                awayFromCenter.y = 0f;
+
+                if (awayFromCenter.sqrMagnitude > 0.01f)
+                {
+                    panicScatter = awayFromCenter.normalized * _flock.panicDispersionMultiplier;
+                }
             }
+        }
+        else
+        {
+            dynFleeWeight = _flock.fleeWeight * Arousal;
         }
 
         Vector3 combined = fleeDir * dynFleeWeight
@@ -986,11 +1011,11 @@ public class SheepAgent : MonoBehaviour
 
         float panicFactor = 1f;
 
-        if (panicMode)
+        if (panicMode && HasWolfPanic)
         {
             panicFactor = Mathf.Lerp(1f, _flock.flockGravityPanicMult, Arousal);
         }
-        else if (Arousal > _flock.postPanicArousalThreshold)
+        else if (HasWolfPanic && Arousal > _flock.postPanicArousalThreshold)
         {
             panicFactor = _flock.postPanicCohesionMultiplier;
         }
@@ -1059,7 +1084,7 @@ public class SheepAgent : MonoBehaviour
 
         float panicFactor = Mathf.InverseLerp(0.3f, 1f, Arousal);
 
-        float separationMultiplier = CurrentState == SheepState.Fleeing
+        float separationMultiplier = CurrentState == SheepState.Fleeing && HasWolfPanic
             ? Mathf.Lerp(1f, _flock.panicSeparationMultiplier, panicFactor)
             : 1f;
 
@@ -1077,7 +1102,7 @@ public class SheepAgent : MonoBehaviour
             Vector3 disperseDir = (transform.position - crowdCenter).normalized;
             float intensity = Mathf.InverseLerp(effectiveThresh, 1f, localDensity);
 
-            float dispersionMultiplier = CurrentState == SheepState.Fleeing
+            float dispersionMultiplier = CurrentState == SheepState.Fleeing && HasWolfPanic
                 ? Mathf.Lerp(1f, _flock.panicDispersionMultiplier, panicFactor)
                 : 1f;
 
