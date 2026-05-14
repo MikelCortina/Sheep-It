@@ -1,12 +1,14 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Unity.Cinemachine;
 
 public class PlayerModeCoordinator : MonoBehaviour
 {
     [SerializeField] private PatrolCarController carController;
     [SerializeField] private OnFootController onFootController;
     [SerializeField] private VehicleSeat vehicleSeat;
-    [SerializeField] private CarCamera topDownCamera;
+    [SerializeField] private CinemachineCamera topDownCamera; 
+    [SerializeField] private CameraManager cameraZoomController;
     [SerializeField] private FlockManager flockManager;
 
     private bool isInVehicle = true;
@@ -22,7 +24,7 @@ public class PlayerModeCoordinator : MonoBehaviour
         if (vehicleSeat == null)
             vehicleSeat = FindObjectOfType<VehicleSeat>();
         if (topDownCamera == null)
-            topDownCamera = FindObjectOfType<CarCamera>();
+            topDownCamera = FindObjectOfType<CinemachineCamera>();
         if (flockManager == null)
             flockManager = FindObjectOfType<FlockManager>();
 
@@ -109,14 +111,16 @@ public class PlayerModeCoordinator : MonoBehaviour
         {
             carController.enabled = true;
             onFootController.gameObject.SetActive(false);
-            topDownCamera.SetTarget(carController.transform);
+            topDownCamera.Target.TrackingTarget = carController.transform;
+            if (cameraZoomController != null) cameraZoomController.CambiarModo(true);
             if (flockManager != null) flockManager.SetPlayerTarget(carController.transform);
         }
         else
         {
             carController.enabled = false;
             onFootController.gameObject.SetActive(true);
-            topDownCamera.SetTarget(onFootController.transform);
+            topDownCamera.Target.TrackingTarget = onFootController.transform;
+            if (cameraZoomController != null) cameraZoomController.CambiarModo(false);
             if (flockManager != null) flockManager.SetPlayerTarget(onFootController.transform);
         }
     }
