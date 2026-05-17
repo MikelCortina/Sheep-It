@@ -31,7 +31,7 @@ Material:
     m_Floats:
     - _AlphaCutoff: 0.3
     m_Colors:
-    - _BaseColor: {r: 0.29999998, g: 0.7, b: 0.19999996, a: 1}
-    - _TipColor: {r: 0.8, g: 0.95, b: 0.29999998, a: 1}
+    - _BaseColor: {r: 0.14291523, g: 0.3018868, b: 0.10395158, a: 1}
+    - _TipColor: {r: 0.50631976, g: 0.8490566, b: 0.084104665, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

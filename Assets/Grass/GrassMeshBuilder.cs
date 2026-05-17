@@ -3,7 +3,7 @@ using UnityEngine;
 
 public static class GrassMeshBuilder
 {
-    const int SEGMENTS = 3;
+    const int SEGMENTS = 4; // Un segmento más para que la barriga se vea bien
 
     public static Mesh Build(List<GrassPoint> points, Transform origin)
     {
@@ -36,7 +36,11 @@ public static class GrassMeshBuilder
                 Vector3 localCenter = origin.InverseTransformPoint(worldCenter);
                 Vector3 localRight = origin.InverseTransformDirection(right);
 
-                float w = Mathf.Lerp(halfW, 0.02f, t);
+                // ? Paso 9: ancho con barriga — sube hasta el 30% extra en el centro
+                // Curva: empieza en halfW, sube en el centro, termina en casi 0
+                float bellCurve = Mathf.Sin(t * Mathf.PI);           // 0 ? 1 ? 0
+                float w = Mathf.Lerp(halfW, 0.02f, t)                // estrecha hacia punta
+                        + halfW * 0.3f * bellCurve;                  // barriga en el centro
 
                 vertices.Add(localCenter - localRight * w);
                 vertices.Add(localCenter + localRight * w);

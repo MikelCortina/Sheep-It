@@ -27,7 +27,7 @@ public class GrassPainterTool : EditorWindow
 
         EditorGUILayout.Space();
         _brushRadius = EditorGUILayout.Slider("Brush Radius", _brushRadius, 0.1f, 10f);
-        _density = EditorGUILayout.Slider("Density (m²)", _density, 1f, 60f);
+        _density = EditorGUILayout.Slider("Density (m²)", _density, 1f, 200f);
         _tallGrass = EditorGUILayout.Toggle("Tall Grass", _tallGrass);
         _eraseMode = EditorGUILayout.Toggle("Erase Mode", _eraseMode);
 
