@@ -13,11 +13,9 @@ public class GrassRenderer : MonoBehaviour
     public float defaultWidth = 0.06f;
 
     [Header("Clustering — Lógica de pastoreo")]
-    [Tooltip("Radio máximo para que dos briznas pertenezcan a la misma celda")]
     public float clusterRadius = 2f;
-    [Tooltip("Mínimo de briznas para que se forme una celda")]
     public int minBladesPerCell = 3;
-    [Tooltip("Briznas con height <= este umbral se consideran 'short grass' y no son pastoreables")]
+    [Tooltip("Briznas con altura media <= este valor se excluyen del pastoreo")]
     public float shortGrassThreshold = 0.08f;
 
     [Header("Pastoreo")]
@@ -30,8 +28,12 @@ public class GrassRenderer : MonoBehaviour
     [SerializeField]
     public List<GrassLogicCell> logicCells = new();
 
+    // Array de escalas actuales por brizna (0..1) — 1 = altura base, 0 = consumida
+    private float[] _bladeScales;
+    private Mesh _dynamicMesh;
+    private bool _meshDirty = false;
+
     MeshFilter _mf;
-    bool _meshDirty = false;
 
     // ?? API pública ??????????????????????????????????????????????
     public void MarkDirty() => _meshDirty = true;
@@ -62,7 +64,6 @@ public class GrassRenderer : MonoBehaviour
 
     void Start()
     {
-        // ? En Play Mode: clusters + mesh con todos los valores del Inspector ya cargados
         RebuildAll();
     }
 
@@ -70,7 +71,7 @@ public class GrassRenderer : MonoBehaviour
     {
         if (!Application.isPlaying) return;
         UpdateGrazing();
-        if (_meshDirty) RebuildMesh();
+        if (_meshDirty) FlushScalesToMesh();
     }
 
     // ?? Rebuild ??????????????????????????????????????????????????
@@ -83,7 +84,16 @@ public class GrassRenderer : MonoBehaviour
     public void RebuildMesh()
     {
         _mf ??= GetComponent<MeshFilter>();
-        _mf.sharedMesh = GrassMeshBuilder.Build(points, transform);
+
+        _dynamicMesh = GrassMeshBuilder.Build(points, transform);
+        _dynamicMesh.MarkDynamic();
+        _mf.sharedMesh = _dynamicMesh;
+
+        // Todas las briznas arrancan a escala 1 (altura completa)
+        _bladeScales = new float[points.Count];
+        for (int i = 0; i < _bladeScales.Length; i++)
+            _bladeScales[i] = 1f;
+
         _meshDirty = false;
     }
 
@@ -99,32 +109,135 @@ public class GrassRenderer : MonoBehaviour
     public void RebuildClusters()
     {
         logicCells.Clear();
-        var assigned = new bool[points.Count];
+
+        if (points.Count == 0) return;
+
+        var assigned = new int[points.Count];
+        for (int i = 0; i < assigned.Length; i++) assigned[i] = -1;
+
+        // ?? Paso 1: clusters normales (igual que antes) ??????????????
+        var tempCells = new List<GrassLogicCell>();
 
         for (int i = 0; i < points.Count; i++)
         {
-            if (assigned[i]) continue;
+            if (assigned[i] >= 0) continue;
 
             var cell = new GrassLogicCell();
 
             for (int j = i; j < points.Count; j++)
             {
-                if (assigned[j]) continue;
+                if (assigned[j] >= 0) continue;
                 if (Vector3.Distance(points[i].position, points[j].position) <= clusterRadius)
                 {
                     cell.bladeIndices.Add(j);
-                    cell.bladeBaseHeights.Add(points[j].height);
-                    assigned[j] = true;
+                    assigned[j] = tempCells.Count; // índice provisional
                 }
             }
 
             if (cell.bladeIndices.Count < minBladesPerCell)
             {
-                foreach (int idx in cell.bladeIndices) assigned[idx] = false;
+                // Devolvemos las briznas al pool — se reasignarán en el paso 2
+                foreach (int idx in cell.bladeIndices)
+                    assigned[idx] = -1;
                 continue;
             }
 
-            // Centroide real
+            // Calcular centroide y altura media
+            Vector3 sum = Vector3.zero;
+            float heightSum = 0f;
+            foreach (int idx in cell.bladeIndices)
+            {
+                sum += points[idx].position;
+                heightSum += points[idx].height;
+            }
+
+            cell.center = sum / cell.bladeIndices.Count;
+            cell.averageBaseHeight = heightSum / cell.bladeIndices.Count;
+
+            // Hierba corta ? excluida del pastoreo
+            if (cell.averageBaseHeight <= shortGrassThreshold)
+            {
+                foreach (int idx in cell.bladeIndices)
+                    assigned[idx] = -2; // marcado como hierba corta — no reasignar
+                continue;
+            }
+
+            // Actualizar los índices de asignación al índice real en tempCells
+            int cellIdx = tempCells.Count;
+            foreach (int idx in cell.bladeIndices)
+                assigned[idx] = cellIdx;
+
+            ApplyCellParams(cell);
+            cell.grassAmount = 1f;
+            tempCells.Add(cell);
+        }
+
+        // ?? Paso 2: asignar briznas huérfanas a la celda más cercana ??
+        // Una brizna es huérfana si assigned[i] == -1
+        // (las -2 son hierba corta y se ignoran)
+        if (tempCells.Count > 0)
+        {
+            for (int i = 0; i < points.Count; i++)
+            {
+                if (assigned[i] != -1) continue; // ya tiene celda o es hierba corta
+
+                float bestDist = float.MaxValue;
+                int bestCell = -1;
+
+                for (int c = 0; c < tempCells.Count; c++)
+                {
+                    float d = Vector3.Distance(points[i].position, tempCells[c].center);
+                    if (d < bestDist)
+                    {
+                        bestDist = d;
+                        bestCell = c;
+                    }
+                }
+
+                if (bestCell >= 0)
+                {
+                    tempCells[bestCell].bladeIndices.Add(i);
+                    tempCells[bestCell].bladeBaseHeights.Add(points[i].height);
+                    assigned[i] = bestCell;
+                }
+            }
+        }
+        else
+        {
+            // ?? Caso extremo: NO hay ningún cluster válido ???????????
+            // Creamos una única celda con todas las briznas que no son hierba corta
+            var fallbackCell = new GrassLogicCell();
+            Vector3 sum = Vector3.zero;
+            float heightSum = 0f;
+            int count = 0;
+
+            for (int i = 0; i < points.Count; i++)
+            {
+                if (assigned[i] == -2) continue; // hierba corta
+                fallbackCell.bladeIndices.Add(i);
+                fallbackCell.bladeBaseHeights.Add(points[i].height);
+                sum += points[i].position;
+                heightSum += points[i].height;
+                count++;
+            }
+
+            if (count > 0)
+            {
+                fallbackCell.center = sum / count;
+                fallbackCell.averageBaseHeight = heightSum / count;
+
+                if (fallbackCell.averageBaseHeight > shortGrassThreshold)
+                {
+                    ApplyCellParams(fallbackCell);
+                    fallbackCell.grassAmount = 1f;
+                    tempCells.Add(fallbackCell);
+                }
+            }
+        }
+
+        // ?? Recalcular centroides con las briznas huérfanas incluidas ??
+        foreach (var cell in tempCells)
+        {
             Vector3 sum = Vector3.zero;
             float heightSum = 0f;
             foreach (int idx in cell.bladeIndices)
@@ -134,23 +247,22 @@ public class GrassRenderer : MonoBehaviour
             }
             cell.center = sum / cell.bladeIndices.Count;
             cell.averageBaseHeight = heightSum / cell.bladeIndices.Count;
-
-            // ? Hierba corta = no pastoreable de base
-            // grassAmount arranca en 1 siempre, pero IsGrazeable quedará false
-            // porque averageBaseHeight <= shortGrassThreshold indica que no hay
-            // suficiente hierba que consumir — lo controlamos via minGrassToGraze
-            // Para hierba corta directamente no la añadimos a logicCells
-            if (cell.averageBaseHeight <= shortGrassThreshold)
-                continue;
-
-            ApplyCellParams(cell);
-            cell.grassAmount = 1f;
-
-            logicCells.Add(cell);
+            // ? Recalcular bladeBaseHeights para que coincida con bladeIndices
+            cell.bladeBaseHeights.Clear();
+            foreach (int idx in cell.bladeIndices)
+                cell.bladeBaseHeights.Add(points[idx].height);
         }
 
-        Debug.Log($"[GrassRenderer] {logicCells.Count} celdas lógicas pastoreables | " +
-                  $"{points.Count} briznas | clusterRadius={clusterRadius}");
+        logicCells.AddRange(tempCells);
+
+        // ?? Verificación de cobertura total ??????????????????????????
+        int uncovered = 0;
+        for (int i = 0; i < assigned.Length; i++)
+            if (assigned[i] == -1) uncovered++;
+
+        Debug.Log($"[GrassRenderer] {logicCells.Count} celdas | " +
+                  $"{points.Count} briznas | sin celda: {uncovered} | " +
+                  $"shortGrassThreshold={shortGrassThreshold}");
     }
 
     // ?? Pastoreo runtime ?????????????????????????????????????????
@@ -160,7 +272,6 @@ public class GrassRenderer : MonoBehaviour
 
         foreach (var cell in logicCells)
         {
-            // Paranoia: garantiza parámetros válidos en runtime
             if (cell.maxSheepEating < 1) cell.maxSheepEating = 1;
 
             float prev = cell.grassAmount;
@@ -182,9 +293,14 @@ public class GrassRenderer : MonoBehaviour
                 cell._reserved = 0;
             }
 
-            if (Mathf.Abs(cell.grassAmount - prev) > 0.005f)
+            if (Mathf.Abs(cell.grassAmount - prev) > 0.001f)
             {
-                ApplyCellHeights(cell);
+                // ? Escribe la nueva escala en _bladeScales para cada brizna de la celda
+                foreach (int idx in cell.bladeIndices)
+                {
+                    if (idx < _bladeScales.Length)
+                        _bladeScales[idx] = cell.grassAmount;
+                }
                 dirty = true;
             }
         }
@@ -192,15 +308,65 @@ public class GrassRenderer : MonoBehaviour
         if (dirty) _meshDirty = true;
     }
 
-    void ApplyCellHeights(GrassLogicCell cell)
+    // ? Parcheado de vértices — usa la escala por brizna para comprimir el strip en Y
+    void FlushScalesToMesh()
     {
-        for (int i = 0; i < cell.bladeIndices.Count; i++)
+        if (_dynamicMesh == null || _bladeScales == null) { _meshDirty = false; return; }
+
+        // ? Obtenemos los vértices base reconstruidos desde los GrassPoints
+        // para no acumular error entre frames al escalar vértices ya escalados.
+        // Usamos un rebuild ligero solo de posiciones, sin triangles ni UVs.
+        Vector3[] verts = _dynamicMesh.vertices;
+        int vpb = GrassMeshBuilder.VerticesPerBlade;   // 10
+        int segs = GrassMeshBuilder.SEGMENTS;           // 4
+
+        for (int bladeIdx = 0; bladeIdx < points.Count; bladeIdx++)
         {
-            int idx = cell.bladeIndices[i];
-            var point = points[idx];
-            point.height = cell.bladeBaseHeights[i] * cell.grassAmount;
-            points[idx] = point;
+            if (bladeIdx >= _bladeScales.Length) break;
+
+            float scale = _bladeScales[bladeIdx];
+            var p = points[bladeIdx];
+            int baseVert = bladeIdx * vpb;
+
+            // Recalculamos los vértices del strip de esta brizna con la nueva escala
+            Vector3 up = p.normal.normalized;
+            Vector3 right = Vector3.Cross(up, new Vector3(
+                Mathf.Sin(p.randomSeed), 0f, Mathf.Cos(p.randomSeed))).normalized;
+
+            if (right.sqrMagnitude < 0.001f)
+                right = Vector3.Cross(up, Vector3.forward).normalized;
+
+            Vector3 forward = Vector3.Cross(right, up).normalized;
+            float halfW = p.width * 0.5f;
+
+            // ? scaledHeight = altura base × escala de la celda
+            float scaledHeight = p.height * scale;
+
+            for (int s = 0; s <= segs; s++)
+            {
+                float t = s / (float)segs;
+                float yOff = t * scaledHeight;
+                float zCurve = t * t * scaledHeight * 0.2f;
+
+                Vector3 worldCenter = p.position + up * yOff + forward * zCurve;
+                Vector3 localCenter = transform.InverseTransformPoint(worldCenter);
+                Vector3 localRight = transform.InverseTransformDirection(right);
+
+                float bellCurve = Mathf.Sin(t * Mathf.PI);
+                float w = Mathf.Lerp(halfW, 0.02f, t) + halfW * 0.3f * bellCurve;
+
+                int vi = baseVert + s * 2;
+                if (vi + 1 < verts.Length)
+                {
+                    verts[vi] = localCenter - localRight * w;
+                    verts[vi + 1] = localCenter + localRight * w;
+                }
+            }
         }
+
+        _dynamicMesh.vertices = verts;
+        _dynamicMesh.RecalculateBounds();
+        _meshDirty = false;
     }
 
     // ?? Gizmos ???????????????????????????????????????????????????
@@ -214,27 +380,23 @@ public class GrassRenderer : MonoBehaviour
 
             if (cell.maxSheepEating == 0)
             {
-                // ? Bug de parámetros
                 c = Color.grey;
             }
             else if (cell.averageBaseHeight <= shortGrassThreshold)
             {
-                // ?? Hierba corta — no pastoreable de base
-                c = new Color(0.8f, 0.1f, 0.1f, 0.8f);
+                c = new Color(0.8f, 0.1f, 0.1f, 0.85f); // ?? hierba corta
             }
             else
             {
-                // ????? según grassAmount
                 c = Color.Lerp(
-                    new Color(0.85f, 0.15f, 0.05f, 0.8f),
-                    new Color(0.1f, 0.85f, 0.15f, 0.8f),
+                    new Color(0.85f, 0.15f, 0.05f, 0.85f),  // ?? consumida
+                    new Color(0.1f, 0.85f, 0.15f, 0.85f),  // ?? llena
                     cell.grassAmount);
             }
 
             Gizmos.color = c;
             Gizmos.DrawWireSphere(cell.center, clusterRadius * 0.35f);
 
-            // ?? Punto si hay ovejas comiendo ahora
             if (Application.isPlaying && cell._grazers > 0)
             {
                 Gizmos.color = Color.yellow;

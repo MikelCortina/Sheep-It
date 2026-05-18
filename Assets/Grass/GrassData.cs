@@ -23,13 +23,10 @@ public class GrassLogicCell
     [Range(0f, 1f)]
     public float grassAmount = 1f;
 
-    // ? Valores seguros por defecto — nunca llegan a 0 aunque Unity ignore [NonSerialized]
     [NonSerialized] public float consumeRate = 0.08f;
     [NonSerialized] public float regenRate = 0f;
     [NonSerialized] public float minGrassToGraze = 0.05f;
     [NonSerialized] public int maxSheepEating = 1;
-
-    // ? Altura media de las briznas base — para saber si la celda es "short grass"
     [NonSerialized] public float averageBaseHeight = 1f;
 
     [NonSerialized] public int _grazers = 0;

@@ -3,14 +3,17 @@ using UnityEngine;
 
 public static class GrassMeshBuilder
 {
-    const int SEGMENTS = 4;
+    public const int SEGMENTS = 4;
+
+    // ? Vértices por brizna: (SEGMENTS + 1) anillos × 2 vértices (L + R)
+    public const int VerticesPerBlade = (SEGMENTS + 1) * 2;
 
     public static Mesh Build(List<GrassPoint> points, Transform origin)
     {
         var vertices = new List<Vector3>();
         var uvs = new List<Vector2>();
-        var uv2s = new List<Vector2>(); // tinte RG
-        var uv3s = new List<Vector4>(); // tinte B + world XZ para noise
+        var uv2s = new List<Vector2>();
+        var uv3s = new List<Vector4>();
         var triangles = new List<int>();
         var colors = new List<Color>();
 
@@ -51,11 +54,9 @@ public static class GrassMeshBuilder
                 uvs.Add(new Vector2(0f, t));
                 uvs.Add(new Vector2(1f, t));
 
-                // ? UV2 = tinte RG
                 uv2s.Add(new Vector2(p.tint.r, p.tint.g));
                 uv2s.Add(new Vector2(p.tint.r, p.tint.g));
 
-                // ? UV3 = tinte B (xy) + world XZ para noise (zw)
                 uv3s.Add(new Vector4(p.tint.b, 0f, p.position.x, p.position.z));
                 uv3s.Add(new Vector4(p.tint.b, 0f, p.position.x, p.position.z));
             }
