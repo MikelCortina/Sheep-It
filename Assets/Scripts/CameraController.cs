@@ -18,7 +18,7 @@ public class CameraManager : MonoBehaviour
     {
         // Cogemos el componente que vemos en tu imagen
         orbital = vCam.GetComponent<CinemachineOrbitalFollow>();
-        radioObjetivo = radioApie;
+        radioObjetivo = radioCoche;
     }
 
     void Update()
