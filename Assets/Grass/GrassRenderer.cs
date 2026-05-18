@@ -23,7 +23,7 @@ public class GrassRenderer : MonoBehaviour
     public float regenRate = 0f;
     public float minGrassToGraze = 0.05f;
     public int maxSheepEating = 1;
-
+    public float minGrassHeightAbs = 0.04f;
     [HideInInspector]
     [SerializeField]
     public List<GrassLogicCell> logicCells = new();
@@ -293,9 +293,9 @@ public class GrassRenderer : MonoBehaviour
                 cell._reserved = 0;
             }
 
-            if (Mathf.Abs(cell.grassAmount - prev) > 0.001f)
+            // ? Sin umbral — cualquier cambio actualiza las escalas
+            if (cell.grassAmount != prev)
             {
-                // ? Escribe la nueva escala en _bladeScales para cada brizna de la celda
                 foreach (int idx in cell.bladeIndices)
                 {
                     if (idx < _bladeScales.Length)
@@ -313,12 +313,9 @@ public class GrassRenderer : MonoBehaviour
     {
         if (_dynamicMesh == null || _bladeScales == null) { _meshDirty = false; return; }
 
-        // ? Obtenemos los vértices base reconstruidos desde los GrassPoints
-        // para no acumular error entre frames al escalar vértices ya escalados.
-        // Usamos un rebuild ligero solo de posiciones, sin triangles ni UVs.
         Vector3[] verts = _dynamicMesh.vertices;
-        int vpb = GrassMeshBuilder.VerticesPerBlade;   // 10
-        int segs = GrassMeshBuilder.SEGMENTS;           // 4
+        int segs = GrassMeshBuilder.SEGMENTS;
+        int vpb = GrassMeshBuilder.VerticesPerBlade;
 
         for (int bladeIdx = 0; bladeIdx < points.Count; bladeIdx++)
         {
@@ -328,7 +325,13 @@ public class GrassRenderer : MonoBehaviour
             var p = points[bladeIdx];
             int baseVert = bladeIdx * vpb;
 
-            // Recalculamos los vértices del strip de esta brizna con la nueva escala
+            // ? Altura escalada nunca baja de minGrassHeightAbs
+            // Interpolamos entre minGrassHeightAbs y la altura base completa
+            float scaledHeight = Mathf.Max(
+                p.height * scale,
+                minGrassHeightAbs
+            );
+
             Vector3 up = p.normal.normalized;
             Vector3 right = Vector3.Cross(up, new Vector3(
                 Mathf.Sin(p.randomSeed), 0f, Mathf.Cos(p.randomSeed))).normalized;
@@ -338,9 +341,6 @@ public class GrassRenderer : MonoBehaviour
 
             Vector3 forward = Vector3.Cross(right, up).normalized;
             float halfW = p.width * 0.5f;
-
-            // ? scaledHeight = altura base × escala de la celda
-            float scaledHeight = p.height * scale;
 
             for (int s = 0; s <= segs; s++)
             {
@@ -368,7 +368,6 @@ public class GrassRenderer : MonoBehaviour
         _dynamicMesh.RecalculateBounds();
         _meshDirty = false;
     }
-
     // ?? Gizmos ???????????????????????????????????????????????????
     void OnDrawGizmos()
     {
@@ -384,18 +383,21 @@ public class GrassRenderer : MonoBehaviour
             }
             else if (cell.averageBaseHeight <= shortGrassThreshold)
             {
-                c = new Color(0.8f, 0.1f, 0.1f, 0.85f); // ?? hierba corta
+                c = new Color(0.8f, 0.1f, 0.1f, 0.85f);
             }
             else
             {
                 c = Color.Lerp(
-                    new Color(0.85f, 0.15f, 0.05f, 0.85f),  // ?? consumida
-                    new Color(0.1f, 0.85f, 0.15f, 0.85f),  // ?? llena
+                    new Color(0.85f, 0.15f, 0.05f, 0.85f),
+                    new Color(0.1f, 0.85f, 0.15f, 0.85f),
                     cell.grassAmount);
             }
 
             Gizmos.color = c;
-            Gizmos.DrawWireSphere(cell.center, clusterRadius * 0.35f);
+
+            // ? Radio proporcional a grassAmount — se encoge junto con la hierba
+            float radius = clusterRadius * 0.35f * Mathf.Lerp(0.2f, 1f, cell.grassAmount);
+            Gizmos.DrawWireSphere(cell.center, radius);
 
             if (Application.isPlaying && cell._grazers > 0)
             {
