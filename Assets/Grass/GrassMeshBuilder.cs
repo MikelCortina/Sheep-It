@@ -3,12 +3,14 @@ using UnityEngine;
 
 public static class GrassMeshBuilder
 {
-    const int SEGMENTS = 4; // Un segmento más para que la barriga se vea bien
+    const int SEGMENTS = 4;
 
     public static Mesh Build(List<GrassPoint> points, Transform origin)
     {
         var vertices = new List<Vector3>();
         var uvs = new List<Vector2>();
+        var uv2s = new List<Vector2>(); // tinte RG
+        var uv3s = new List<Vector4>(); // tinte B + world XZ para noise
         var triangles = new List<int>();
         var colors = new List<Color>();
 
@@ -36,11 +38,8 @@ public static class GrassMeshBuilder
                 Vector3 localCenter = origin.InverseTransformPoint(worldCenter);
                 Vector3 localRight = origin.InverseTransformDirection(right);
 
-                // ? Paso 9: ancho con barriga — sube hasta el 30% extra en el centro
-                // Curva: empieza en halfW, sube en el centro, termina en casi 0
-                float bellCurve = Mathf.Sin(t * Mathf.PI);           // 0 ? 1 ? 0
-                float w = Mathf.Lerp(halfW, 0.02f, t)                // estrecha hacia punta
-                        + halfW * 0.3f * bellCurve;                  // barriga en el centro
+                float bellCurve = Mathf.Sin(t * Mathf.PI);
+                float w = Mathf.Lerp(halfW, 0.02f, t) + halfW * 0.3f * bellCurve;
 
                 vertices.Add(localCenter - localRight * w);
                 vertices.Add(localCenter + localRight * w);
@@ -51,6 +50,14 @@ public static class GrassMeshBuilder
 
                 uvs.Add(new Vector2(0f, t));
                 uvs.Add(new Vector2(1f, t));
+
+                // ? UV2 = tinte RG
+                uv2s.Add(new Vector2(p.tint.r, p.tint.g));
+                uv2s.Add(new Vector2(p.tint.r, p.tint.g));
+
+                // ? UV3 = tinte B (xy) + world XZ para noise (zw)
+                uv3s.Add(new Vector4(p.tint.b, 0f, p.position.x, p.position.z));
+                uv3s.Add(new Vector4(p.tint.b, 0f, p.position.x, p.position.z));
             }
 
             for (int s = 0; s < SEGMENTS; s++)
@@ -65,6 +72,8 @@ public static class GrassMeshBuilder
         mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
         mesh.SetVertices(vertices);
         mesh.SetUVs(0, uvs);
+        mesh.SetUVs(1, uv2s);
+        mesh.SetUVs(2, uv3s);
         mesh.SetColors(colors);
         mesh.SetTriangles(triangles, 0);
         mesh.RecalculateNormals();

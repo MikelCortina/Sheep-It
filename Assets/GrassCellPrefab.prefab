@@ -51,10 +51,9 @@ MonoBehaviour:
   minGrassToGraze: 0.05
   detectionRadius: 25
   maxSheepEating: 2
-  grassRenderer: {fileID: 6579653655671352166}
-  fullColor: {r: 0.2, g: 0.7, b: 0.1, a: 1}
-  emptyColor: {r: 0.55, g: 0.45, b: 0.2, a: 1}
-  maxGrassScale: 10
+  bladeIndices: 
+  bladeBaseHeights: []
+  linkedRenderer: {fileID: 0}
 --- !u!1001 &669783068241594315
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -107,6 +106,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: grass
       objectReference: {fileID: 0}
+    - target: {fileID: 5261559467733355896, guid: 88f600705a11ecb45b747f6f0159d4a2, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -115,10 +118,5 @@ PrefabInstance:
 --- !u!4 &5405600479721541641 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4778038665503266754, guid: 88f600705a11ecb45b747f6f0159d4a2, type: 3}
-  m_PrefabInstance: {fileID: 669783068241594315}
-  m_PrefabAsset: {fileID: 0}
---- !u!23 &6579653655671352166 stripped
-MeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 5909897012219260077, guid: 88f600705a11ecb45b747f6f0159d4a2, type: 3}
   m_PrefabInstance: {fileID: 669783068241594315}
   m_PrefabAsset: {fileID: 0}

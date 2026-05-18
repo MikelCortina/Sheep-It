@@ -3,68 +3,36 @@ using UnityEngine;
 
 public class GrassCell : MonoBehaviour
 {
-    public static readonly List<GrassCell> AllCells = new List<GrassCell>();
+    public static readonly List<GrassCell> AllCells = new();
 
     [Header("Grass Settings")]
     [Range(0f, 1f)] public float grassAmount = 1f;
-
-    [Tooltip("Cantidad consumida por segundo por cada oveja")]
     public float consumeRate = 0.08f;
-
-    [Tooltip("Regeneración. Pon 0 si no quieres que vuelva a crecer")]
     public float regenRate = 0f;
-
-    [Tooltip("Cantidad mínima para poder comer")]
     public float minGrassToGraze = 0.05f;
-
-    [Tooltip("Radio de detección")]
     public float detectionRadius = 4f;
 
     [Header("Capacity")]
-    [Tooltip("Número máximo de ovejas comiendo o yendo hacia esta celda")]
     public int maxSheepEating = 1;
 
-    [Header("Visual")]
-    public Renderer grassRenderer;
-    public Color fullColor = new Color(0.2f, 0.7f, 0.1f);
-    public Color emptyColor = new Color(0.55f, 0.45f, 0.2f);
-    public float maxGrassScale = 1f;
+    // Briznas asignadas a esta celda (índices en GrassRenderer.points)
+    [HideInInspector] public List<int> bladeIndices = new();
+    [HideInInspector] public List<float> bladeBaseHeights = new(); // alturas originales
+    [HideInInspector] public GrassRenderer linkedRenderer;
 
-    private int _grazersCount = 0;
-    private int _reservedCount = 0;
-
-    private static readonly int BaseColorProp = Shader.PropertyToID("_BaseColor");
-    private static readonly int ColorProp = Shader.PropertyToID("_Color");
+    int _grazersCount = 0;
+    int _reservedCount = 0;
 
     public bool IsGrazeable => grassAmount > minGrassToGraze;
-
     public int UsedSlots => _grazersCount + _reservedCount;
-
     public bool HasFreeSlot => UsedSlots < maxSheepEating;
-
     public bool CanBeReserved => IsGrazeable && HasFreeSlot;
 
-    public float Occupancy01
-    {
-        get
-        {
-            if (maxSheepEating <= 0) return 1f;
-            return Mathf.Clamp01((float)UsedSlots / maxSheepEating);
-        }
-    }
+    public float Occupancy01 => maxSheepEating <= 0
+        ? 1f : Mathf.Clamp01((float)UsedSlots / maxSheepEating);
 
-    private void OnEnable()
-    {
-        if (!AllCells.Contains(this))
-        {
-            AllCells.Add(this);
-        }
-    }
-
-    private void OnDisable()
-    {
-        AllCells.Remove(this);
-    }
+    void OnEnable() { if (!AllCells.Contains(this)) AllCells.Add(this); }
+    void OnDisable() { AllCells.Remove(this); }
 
     void Update()
     {
@@ -73,7 +41,7 @@ public class GrassCell : MonoBehaviour
             grassAmount -= consumeRate * _grazersCount * Time.deltaTime;
             grassAmount = Mathf.Max(0f, grassAmount);
         }
-        else if (_grazersCount <= 0 && regenRate > 0f && grassAmount > 0f)
+        else if (_grazersCount <= 0 && regenRate > 0f && grassAmount < 1f)
         {
             grassAmount += regenRate * Time.deltaTime;
             grassAmount = Mathf.Min(1f, grassAmount);
@@ -86,13 +54,36 @@ public class GrassCell : MonoBehaviour
             _reservedCount = 0;
         }
 
-        UpdateVisuals();
+        UpdateBladeHeights();
+    }
+
+    void UpdateBladeHeights()
+    {
+        if (linkedRenderer == null || bladeIndices.Count == 0) return;
+
+        bool dirty = false;
+        for (int i = 0; i < bladeIndices.Count; i++)
+        {
+            int idx = bladeIndices[i];
+            float baseHeight = bladeBaseHeights[i];
+            float targetHeight = baseHeight * grassAmount;
+
+            var point = linkedRenderer.points[idx];
+            // Solo marcamos dirty si hay cambio significativo
+            if (Mathf.Abs(point.height - targetHeight) > 0.001f)
+            {
+                point.height = targetHeight;
+                linkedRenderer.points[idx] = point;
+                dirty = true;
+            }
+        }
+
+        if (dirty) linkedRenderer.MarkDirty();
     }
 
     public bool TryReserve()
     {
         if (!CanBeReserved) return false;
-
         _reservedCount++;
         return true;
     }
@@ -105,16 +96,8 @@ public class GrassCell : MonoBehaviour
     public bool TryStartGrazing()
     {
         if (!IsGrazeable) return false;
-
-        if (_reservedCount > 0)
-        {
-            _reservedCount--;
-            _grazersCount++;
-            return true;
-        }
-
+        if (_reservedCount > 0) { _reservedCount--; _grazersCount++; return true; }
         if (!HasFreeSlot) return false;
-
         _grazersCount++;
         return true;
     }
@@ -122,31 +105,6 @@ public class GrassCell : MonoBehaviour
     public void StopGrazing()
     {
         _grazersCount = Mathf.Max(0, _grazersCount - 1);
-    }
-
-    void UpdateVisuals()
-    {
-        if (grassRenderer != null)
-        {
-            Material mat = grassRenderer.material;
-            Color currentColor = Color.Lerp(emptyColor, fullColor, grassAmount);
-
-            if (mat.HasProperty(BaseColorProp))
-            {
-                mat.SetColor(BaseColorProp, currentColor);
-            }
-            else if (mat.HasProperty(ColorProp))
-            {
-                mat.SetColor(ColorProp, currentColor);
-            }
-        }
-
-        float s = Mathf.Lerp(0f, maxGrassScale, grassAmount);
-
-        for (int i = 0; i < transform.childCount; i++)
-        {
-            transform.GetChild(i).localScale = Vector3.one * s;
-        }
     }
 
     void OnDrawGizmos()

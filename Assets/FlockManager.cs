@@ -38,7 +38,7 @@ public class FlockManager : MonoBehaviour
     public float flockRadiusCar = 18f;
 
     public string PlayerTargetTag =>
-    playerTransform != null ? playerTransform.tag : "Player";
+        playerTransform != null ? playerTransform.tag : "Player";
 
     [Header("Density Stress")]
     public float densityStressRadius = 3f;
@@ -46,63 +46,33 @@ public class FlockManager : MonoBehaviour
     public float densityStressPanicMult = 0.75f;
 
     [Header("Flock Gravity")]
-    [Tooltip("Fuerza de atracci�n hacia el centroide del reba�o")]
     public float flockGravityWeight = 1.5f;
-
-    [Tooltip("Solo act�a si la oveja est� a m�s de esta distancia del centroide")]
     public float flockGravityRadius = 8f;
-
-    [Tooltip("Fracci�n m�nima de fuerza cuando est� muy cerca")]
     public float flockGravityFalloff = 0.2f;
-
-    [Tooltip("Multiplica la gravedad cuando el reba�o est� en Fleeing")]
     public float flockGravityPanicMult = 1.8f;
 
     [Header("Anti-Split")]
-    [Tooltip("Distancia del centroide a partir de la cual se activa el magnetismo fuerte")]
     public float antiSplitRadius = 14f;
-
-    [Tooltip("Fuerza extra de atracci�n al centroide cuando la oveja se est� separando")]
     public float antiSplitWeight = 3.5f;
-
-    [Tooltip("Solo act�a si el Arousal supera este valor")]
     [Range(0f, 1f)]
     public float antiSplitArousalThreshold = 0.4f;
 
     [Header("Idle Wander")]
-    [Tooltip("Segundos quieta antes de dispersarse")]
     public float idleRelaxTime = 0f;
-
-    [Tooltip("Radio m�ximo de cada paso de campeo desde la posici�n actual")]
     public float idleWanderRadius = 10f;
-
-    [Tooltip("Velocidad al campear")]
     public float idleWanderSpeed = 1.0f;
-
-    [Tooltip("Segundos base entre cada paso de campeo")]
     public float idleWanderInterval = 1.2f;
-
-    [Tooltip("Cu�nto tiende la oveja a alejarse del centroide")]
     [Range(0f, 1f)]
     public float idleSpreadBias = 0.75f;
-
-    [Tooltip("Radio m�ximo desde el centroide dentro del que pueden campear")]
     public float idleMaxSpreadRadius = 20f;
 
     [Header("Pasture Grazing")]
-    [Tooltip("Radio de b�squeda de celdas de hierba alrededor de cada oveja")]
+    // ✅ Referencia al GrassRenderer que contiene las logicCells
+    public GrassRenderer grassRenderer;
     public float pastureSearchRadius = 12f;
-
-    [Tooltip("Tiempo m�nimo que una oveja pasa pastando en una celda")]
     public float pastureGrazeMinTime = 5f;
-
-    [Tooltip("Tiempo m�ximo que una oveja pasa pastando en una celda")]
     public float pastureGrazeMaxTime = 12f;
-
-    [Tooltip("Distancia antes de la celda donde la oveja se detiene a pastar")]
     public float pastureStopOffset = 1.2f;
-
-    [Tooltip("Velocidad de rotaci�n en grados/segundo hacia la celda de hierba")]
     public float pastureRotateSpeed = 120f;
 
     [Header("Panic Behaviour")]
@@ -125,7 +95,7 @@ public class FlockManager : MonoBehaviour
     }
 
     void Start()
-    {// DESPUÉS — busca también en objetos inactivos
+    {
         var allObjects = Resources.FindObjectsOfTypeAll<GameObject>();
         GameObject player = null;
         foreach (var go in allObjects)
@@ -180,7 +150,7 @@ public class FlockManager : MonoBehaviour
         {
             Debug.LogWarning(
                 $"[FlockManager] Solo se spawnearon {spawned}/{flockSize} ovejas. " +
-                "Ampl�a el NavMesh o mueve el FlockManager a una zona navegable."
+                "Amplía el NavMesh o mueve el FlockManager a una zona navegable."
             );
         }
 
@@ -195,20 +165,14 @@ public class FlockManager : MonoBehaviour
         if (allSheep.Count == 0) return;
 
         Vector3 sum = Vector3.zero;
-
         foreach (var sheep in allSheep)
-        {
             sum += sheep.transform.position;
-        }
 
         FlockCentroid = sum / allSheep.Count;
 
         float spreadSum = 0f;
-
         foreach (var sheep in allSheep)
-        {
             spreadSum += Vector3.Distance(sheep.transform.position, FlockCentroid);
-        }
 
         FlockSpreadRadius = spreadSum / allSheep.Count;
     }
@@ -233,13 +197,10 @@ public class FlockManager : MonoBehaviour
         DrawWireCircle(FlockCentroid, antiSplitRadius, 32);
 
         Gizmos.color = new Color(0.2f, 0.8f, 0.2f, 0.08f);
-
         foreach (var sheep in allSheep)
         {
             if (sheep != null)
-            {
                 Gizmos.DrawWireSphere(sheep.transform.position, pastureSearchRadius);
-            }
         }
     }
 
@@ -256,7 +217,6 @@ public class FlockManager : MonoBehaviour
                 0f,
                 Mathf.Sin(angle) * radius
             );
-
             Gizmos.DrawLine(prev, next);
             prev = next;
         }

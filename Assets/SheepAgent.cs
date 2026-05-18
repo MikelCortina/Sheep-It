@@ -30,7 +30,8 @@ public class SheepAgent : MonoBehaviour
     private float _eatTimer = 0f;
     private float _eatDuration = 0f;
 
-    private GrassCell _targetCell = null;
+    // ? GrassCell ? GrassLogicCell
+    private GrassLogicCell _targetCell = null;
     private bool _isPastureGrazing = false;
     private bool _hasGrassReservation = false;
     private bool _isPastureGrazingRegistered = false;
@@ -60,7 +61,10 @@ public class SheepAgent : MonoBehaviour
 
     private float _followEatingSheepRadius = 40f;
 
-    public bool IsEatingGrass => _isPastureGrazingRegistered && _targetCell != null && _targetCell.IsGrazeable;
+    // ? _targetCell.IsGrazeable no necesita .transform
+    public bool IsEatingGrass => _isPastureGrazingRegistered
+                              && _targetCell != null
+                              && _targetCell.IsGrazeable;
 
     private bool _isCaughtByWolf = false;
 
@@ -122,32 +126,17 @@ public class SheepAgent : MonoBehaviour
         float distToPlayer = Vector3.Distance(transform.position, _flock.playerTransform.position);
 
         if (_externalThreatTimer > 0f)
-        {
             _externalThreatTimer -= Time.deltaTime;
-        }
         else
-        {
             _externalThreat = null;
-        }
 
         if (_socialPanicTimer > 0f)
-        {
             _socialPanicTimer -= Time.deltaTime;
-        }
         else
-        {
             _socialPanicDirection = Vector3.zero;
-        }
 
-        if (_grassDecisionLockTimer > 0f)
-        {
-            _grassDecisionLockTimer -= Time.deltaTime;
-        }
-
-        if (_grassRepathTimer > 0f)
-        {
-            _grassRepathTimer -= Time.deltaTime;
-        }
+        if (_grassDecisionLockTimer > 0f) _grassDecisionLockTimer -= Time.deltaTime;
+        if (_grassRepathTimer > 0f) _grassRepathTimer -= Time.deltaTime;
 
         UpdateArousal(distToPlayer);
         ApplyWindToCurrentMovement();
@@ -160,6 +149,7 @@ public class SheepAgent : MonoBehaviour
                 Color.cyan
             );
         }
+
         UpdateState(distToPlayer);
         UpdateAnimator();
     }
@@ -170,13 +160,10 @@ public class SheepAgent : MonoBehaviour
 
         _externalThreat = threat;
         _externalThreatTimer = _externalThreatDuration;
-
         Arousal = Mathf.Clamp01(Mathf.Max(Arousal, fearAmount));
 
         if (CurrentState != SheepState.Fleeing)
-        {
             SetFleeing();
-        }
     }
 
     public void CatchByWolf()
@@ -184,16 +171,10 @@ public class SheepAgent : MonoBehaviour
         if (_isCaughtByWolf) return;
 
         _isCaughtByWolf = true;
-
         CurrentState = SheepState.Fleeing;
         Arousal = 1f;
 
-        if (_targetFood != null)
-        {
-            _targetFood.Release();
-            _targetFood = null;
-        }
-
+        if (_targetFood != null) { _targetFood.Release(); _targetFood = null; }
         _isEating = false;
         StopPastureGrazing();
 
@@ -225,11 +206,7 @@ public class SheepAgent : MonoBehaviour
         }
 
         Collider col = GetComponent<Collider>();
-
-        if (col != null)
-        {
-            col.enabled = false;
-        }
+        if (col != null) col.enabled = false;
 
         if (_animator != null)
         {
@@ -248,15 +225,10 @@ public class SheepAgent : MonoBehaviour
         bool wolfSocialPanic = _socialPanicTimer > 0f;
 
         if (playerOrCarThreat || wolfThreat || wolfSocialPanic)
-        {
             Arousal = Mathf.MoveTowards(Arousal, 1f, Time.deltaTime * _flock.arousalRiseSpeed);
-        }
         else
-        {
             Arousal = Mathf.MoveTowards(Arousal, 0f, Time.deltaTime / _flock.arousalDecayTime);
-        }
 
-        // Contagio social SOLO si viene del lobo, no del coche.
         foreach (var other in _flock.allSheep)
         {
             if (other == null || other == this) continue;
@@ -266,20 +238,14 @@ public class SheepAgent : MonoBehaviour
             if (d < _flock.separationRadius * 3f && other.HasWolfPanic && other.Arousal > 0.7f)
             {
                 Arousal = Mathf.MoveTowards(
-                    Arousal,
-                    other.Arousal,
-                    Time.deltaTime * _flock.arousalRiseSpeed * 0.8f
-                );
+                    Arousal, other.Arousal,
+                    Time.deltaTime * _flock.arousalRiseSpeed * 0.8f);
 
                 Vector3 panicDir = other.AgentVelocity;
-
                 if (panicDir.sqrMagnitude < 0.01f)
-                {
                     panicDir = transform.position - other.transform.position;
-                }
 
                 panicDir.y = 0f;
-
                 if (panicDir.sqrMagnitude > 0.01f)
                 {
                     _socialPanicDirection = panicDir.normalized;
@@ -294,34 +260,14 @@ public class SheepAgent : MonoBehaviour
         switch (CurrentState)
         {
             case SheepState.Grazing:
-                if (HasWolfPanic || distToPlayer < FleeRadius)
-                {
-                    SetFleeing();
-                    return;
-                }
-
-                if (distToPlayer < FlockRadius || Arousal > 0.3f)
-                {
-                    SetFlocking();
-                    return;
-                }
-
+                if (HasWolfPanic || distToPlayer < FleeRadius) { SetFleeing(); return; }
+                if (distToPlayer < FlockRadius || Arousal > 0.3f) { SetFlocking(); return; }
                 GrazingUpdate();
                 break;
 
             case SheepState.Flocking:
-                if (HasWolfPanic || distToPlayer < FleeRadius)
-                {
-                    SetFleeing();
-                    return;
-                }
-
-                if (distToPlayer > FlockRadius + 3f && Arousal < 0.1f)
-                {
-                    SetGrazing();
-                    return;
-                }
-
+                if (HasWolfPanic || distToPlayer < FleeRadius) { SetFleeing(); return; }
+                if (distToPlayer > FlockRadius + 3f && Arousal < 0.1f) { SetGrazing(); return; }
                 FlockingUpdate();
                 break;
 
@@ -332,14 +278,12 @@ public class SheepAgent : MonoBehaviour
                     SetFlocking();
                     return;
                 }
-
                 if (HasWolfPanic && _externalThreat == null && _socialPanicTimer <= 0f && Arousal < 0.35f)
                 {
                     _agent.speed = _flock.minSpeed + 1f;
                     SetFlocking();
                     return;
                 }
-
                 FleeingUpdate();
                 break;
         }
@@ -355,10 +299,7 @@ public class SheepAgent : MonoBehaviour
         _isIdleWandering = false;
         _idleWanderCooldown = Random.Range(0f, _flock.idleWanderInterval);
 
-        if (AgentReady)
-        {
-            _agent.isStopped = true;
-        }
+        if (AgentReady) _agent.isStopped = true;
     }
 
     void GrazingUpdate()
@@ -371,7 +312,6 @@ public class SheepAgent : MonoBehaviour
             if (playerFar && calmEnough)
             {
                 _stillTimer += Time.deltaTime;
-
                 if (_stillTimer >= _flock.idleRelaxTime)
                 {
                     _isIdleWandering = true;
@@ -396,7 +336,6 @@ public class SheepAgent : MonoBehaviour
         {
             float distToFood = Vector3.Distance(transform.position, _targetFood.transform.position);
             bool arrived = distToFood < 1.5f || (!_agent.pathPending && _agent.remainingDistance < 1.5f);
-
             if (arrived)
             {
                 _isEating = true;
@@ -406,27 +345,19 @@ public class SheepAgent : MonoBehaviour
             }
         }
 
-        if (_isIdleWandering)
-        {
-            IdleWanderUpdate();
-            return;
-        }
+        if (_isIdleWandering) { IdleWanderUpdate(); return; }
 
         _grazingTimer += Time.deltaTime;
-
         if (_grazingTimer >= _grazingDuration)
         {
             _grazingTimer = 0f;
             _grazingDuration = Random.Range(3f, 8f);
 
             Vector3 randomDir = new Vector3(Random.Range(-1f, 1f), 0f, Random.Range(-1f, 1f)).normalized;
-
             Vector3 windForce = CalculateWindForce();
 
             if (windForce.sqrMagnitude > 0.001f)
-            {
                 randomDir = (randomDir + windForce.normalized * 1.5f).normalized;
-            }
 
             Vector3 wander = transform.position + randomDir * Random.Range(2f, 5f);
 
@@ -441,14 +372,9 @@ public class SheepAgent : MonoBehaviour
 
     void IdleWanderUpdate()
     {
-        if (_isEating)
-        {
-            EatingUpdate();
-            return;
-        }
+        if (_isEating) { EatingUpdate(); return; }
 
         FoodSource nearestFood = FindBestFood();
-
         if (nearestFood != null && _targetFood == null)
         {
             StopPastureGrazing();
@@ -456,41 +382,25 @@ public class SheepAgent : MonoBehaviour
             return;
         }
 
-        if (_isPastureGrazing)
-        {
-            PastureGrazingUpdate();
-            return;
-        }
+        if (_isPastureGrazing) { PastureGrazingUpdate(); return; }
 
         _idleWanderCooldown -= Time.deltaTime;
-
         if (_idleWanderCooldown > 0f) return;
 
         _idleWanderCooldown = _flock.idleWanderInterval + Random.Range(-0.3f, 0.8f);
 
-        GrassCell cell = FindBestGrassCell();
+        // ? Busca en logicCells del GrassRenderer
+        GrassLogicCell cell = FindBestGrassCell();
+        if (cell != null) { StartPastureGrazing(cell); return; }
 
-        if (cell != null)
-        {
-            StartPastureGrazing(cell);
-            return;
-        }
-
-        if (TryFollowEatingSheep())
-        {
-            return;
-        }
+        if (TryFollowEatingSheep()) return;
 
         DoIdleWanderStep();
     }
 
     void DoIdleWanderStep()
     {
-        if (Random.value < 0.25f)
-        {
-            _agent.isStopped = true;
-            return;
-        }
+        if (Random.value < 0.25f) { _agent.isStopped = true; return; }
 
         float distFromCentroid = Vector3.Distance(transform.position, _flock.FlockCentroid);
         bool overLimit = distFromCentroid > _flock.idleMaxSpreadRadius;
@@ -510,13 +420,13 @@ public class SheepAgent : MonoBehaviour
             if (_personalDriftTimer <= 0f || _personalDriftDir == Vector3.zero)
             {
                 _personalDriftTimer = Random.Range(4f, 7f);
-
                 Vector3 awayFromCenter = transform.position - _flock.FlockCentroid;
 
                 if (awayFromCenter.magnitude > 1.5f)
                 {
                     Vector3 awayDir = awayFromCenter.normalized;
-                    Vector3 randPerp = Vector3.Cross(awayDir, Vector3.up).normalized * Random.Range(-0.6f, 0.6f);
+                    Vector3 randPerp = Vector3.Cross(awayDir, Vector3.up).normalized
+                                     * Random.Range(-0.6f, 0.6f);
                     _personalDriftDir = (awayDir + randPerp).normalized;
                 }
                 else
@@ -529,20 +439,16 @@ public class SheepAgent : MonoBehaviour
             float proximityFactor = Mathf.InverseLerp(
                 _flock.idleMaxSpreadRadius,
                 _flock.idleMaxSpreadRadius * 0.6f,
-                distFromCentroid
-            );
+                distFromCentroid);
 
             float effectiveBias = _flock.idleSpreadBias * proximityFactor;
-
             Vector3 randomDir = new Vector3(Random.Range(-1f, 1f), 0f, Random.Range(-1f, 1f)).normalized;
             driftDir = Vector3.Lerp(randomDir, _personalDriftDir, effectiveBias).normalized;
         }
-        Vector3 windForce = CalculateWindForce();
 
+        Vector3 windForce = CalculateWindForce();
         if (windForce.sqrMagnitude > 0.001f)
-        {
             driftDir = (driftDir + windForce.normalized * 1.5f).normalized;
-        }
 
         float stepDist = Random.Range(_flock.idleWanderRadius * 0.6f, _flock.idleWanderRadius);
         Vector3 candidate = transform.position + driftDir * stepDist;
@@ -580,7 +486,6 @@ public class SheepAgent : MonoBehaviour
 
         Vector3 windForce = WeatherManager.Instance.WindForce;
         windForce.y = 0f;
-
         if (windForce.sqrMagnitude < 0.001f) return;
 
         bool isStrongGust = WeatherManager.Instance.IsGusting;
@@ -591,31 +496,19 @@ public class SheepAgent : MonoBehaviour
             if (!_agent.hasPath) return;
         }
 
-        if (isStrongGust)
-        {
-            InterruptEatingBecauseOfWind();
-        }
+        if (isStrongGust) InterruptEatingBecauseOfWind();
 
-        float stateMultiplier = 1f;
-
-        if (CurrentState == SheepState.Grazing)
+        float stateMultiplier = CurrentState switch
         {
-            stateMultiplier = isStrongGust ? 1.2f : 0.6f;
-        }
-        else if (CurrentState == SheepState.Flocking)
-        {
-            stateMultiplier = isStrongGust ? 1.5f : 1f;
-        }
-        else if (CurrentState == SheepState.Fleeing)
-        {
-            stateMultiplier = isStrongGust ? 1.8f : 1.3f;
-        }
+            SheepState.Grazing => isStrongGust ? 1.2f : 0.6f,
+            SheepState.Flocking => isStrongGust ? 1.5f : 1.0f,
+            SheepState.Fleeing => isStrongGust ? 1.8f : 1.3f,
+            _ => 1f
+        };
 
         float arousalMultiplier = Mathf.Lerp(0.8f, 1.3f, Arousal);
         float finalStrength = windForce.magnitude * stateMultiplier * arousalMultiplier;
-
-        Vector3 windOffset = windForce.normalized * finalStrength;
-        Vector3 targetPosition = transform.position + windOffset;
+        Vector3 targetPosition = transform.position + windForce.normalized * finalStrength;
 
         if (NavMesh.SamplePosition(targetPosition, out NavMeshHit hit, 5f, NavMesh.AllAreas))
         {
@@ -627,80 +520,52 @@ public class SheepAgent : MonoBehaviour
 
     void InterruptEatingBecauseOfWind()
     {
-        if (_targetFood != null)
-        {
-            _targetFood.Release();
-            _targetFood = null;
-        }
-
+        if (_targetFood != null) { _targetFood.Release(); _targetFood = null; }
         _isEating = false;
-
         if (_isPastureGrazing || _isPastureGrazingRegistered || _hasGrassReservation)
-        {
             StopPastureGrazing();
-        }
     }
+
     Vector3 CalculateWindForce()
     {
-        if (WeatherManager.Instance == null)
-        {
+        if (WeatherManager.Instance == null || !WeatherManager.Instance.HasWind)
             return Vector3.zero;
-        }
-
-        if (!WeatherManager.Instance.HasWind)
-        {
-            return Vector3.zero;
-        }
 
         float arousalMultiplier = Mathf.Lerp(0.6f, 1.2f, Arousal);
-
         return WeatherManager.Instance.WindForce * arousalMultiplier;
     }
 
-    GrassCell FindBestGrassCell()
+    // ? Devuelve GrassLogicCell — busca en GrassRenderer.logicCells
+    GrassLogicCell FindBestGrassCell()
     {
-        GrassCell best = null;
+        if (_flock.grassRenderer == null) return null;
+
+        GrassLogicCell best = null;
         float bestScore = -1f;
         float radius = _flock.pastureSearchRadius;
 
-        foreach (GrassCell cell in GrassCell.AllCells)
+        foreach (var cell in _flock.grassRenderer.logicCells)
         {
-            if (cell == null) continue;
             if (!cell.IsGrazeable) continue;
 
-            float d = Vector3.Distance(transform.position, cell.transform.position);
-
+            float d = Vector3.Distance(transform.position, cell.center);
             if (d > radius) continue;
-            if (d > cell.detectionRadius) continue;
 
             bool canReserve = cell.CanBeReserved;
-
-            if (!canReserve && d > 2.2f)
-            {
-                continue;
-            }
+            if (!canReserve && d > 2.2f) continue;
 
             float distanceScore = cell.grassAmount / Mathf.Max(d, 0.5f);
-            float freeSlotBonus = canReserve ? (1f - cell.Occupancy01) * 2f : 0f;
+            float freeSlotBonus = canReserve
+                ? (1f - (float)cell.UsedSlots / Mathf.Max(cell.maxSheepEating, 1)) * 2f
+                : 0f;
             float closeBonus = d < 2.2f ? 3f : 0f;
+            float score = (distanceScore + freeSlotBonus + closeBonus) * (canReserve ? 1f : 0.35f);
 
-            float score = distanceScore + freeSlotBonus + closeBonus;
-
-            if (!canReserve)
-            {
-                score *= 0.35f;
-            }
-
-            if (score > bestScore)
-            {
-                bestScore = score;
-                best = cell;
-            }
+            if (score > bestScore) { bestScore = score; best = cell; }
         }
 
         return best;
     }
-
 
     SheepAgent FindEatingSheepToFollow()
     {
@@ -713,59 +578,39 @@ public class SheepAgent : MonoBehaviour
             if (!sheep.IsEatingGrass) continue;
 
             float distance = Vector3.Distance(transform.position, sheep.transform.position);
-
             if (distance > _followEatingSheepRadius) continue;
 
-            if (distance < bestDistance)
-            {
-                bestDistance = distance;
-                bestSheep = sheep;
-            }
+            if (distance < bestDistance) { bestDistance = distance; bestSheep = sheep; }
         }
 
         return bestSheep;
     }
 
-
     bool TryFollowEatingSheep()
     {
         SheepAgent eatingSheep = FindEatingSheepToFollow();
+        if (eatingSheep == null) return false;
 
-        if (eatingSheep == null)
-        {
-            return false;
-        }
-
-        Vector3 targetPosition = eatingSheep.transform.position;
-
-        Vector3 randomOffset = new Vector3(
-            Random.Range(-2f, 2f),
-            0f,
-            Random.Range(-2f, 2f)
-        );
-
-        Vector3 destination = targetPosition + randomOffset;
+        Vector3 randomOffset = new Vector3(Random.Range(-2f, 2f), 0f, Random.Range(-2f, 2f));
+        Vector3 destination = eatingSheep.transform.position + randomOffset;
 
         if (NavMesh.SamplePosition(destination, out NavMeshHit hit, 4f, NavMesh.AllAreas))
         {
             _agent.isStopped = false;
             _agent.speed = _flock.idleWanderSpeed * 1.1f;
             _agent.SetDestination(hit.position);
-
             _idleWanderCooldown = _flock.idleWanderInterval;
             return true;
         }
 
         return false;
     }
-    void StartPastureGrazing(GrassCell cell)
+
+    // ? Parámetro GrassLogicCell, usa .center en vez de .transform.position
+    void StartPastureGrazing(GrassLogicCell cell)
     {
         if (cell == null) return;
-
-        if (!cell.TryReserve())
-        {
-            return;
-        }
+        if (!cell.TryReserve()) return;
 
         _targetCell = cell;
         _hasGrassReservation = true;
@@ -775,10 +620,10 @@ public class SheepAgent : MonoBehaviour
         _grassDecisionLockTimer = _grassDecisionLockDuration * _personalDecisionMultiplier;
         _grassTravelTimer = 0f;
 
-        Vector3 dirToCell = (cell.transform.position - transform.position).normalized;
-        float distToCell = Vector3.Distance(transform.position, cell.transform.position);
+        Vector3 dirToCell = (cell.center - transform.position).normalized;
+        float distToCell = Vector3.Distance(transform.position, cell.center);
         float stopOffset = Mathf.Min(_flock.pastureStopOffset, distToCell * 0.8f);
-        Vector3 destination = cell.transform.position - dirToCell * stopOffset;
+        Vector3 destination = cell.center - dirToCell * stopOffset;
 
         if (NavMesh.SamplePosition(destination, out NavMeshHit hit, 3f, NavMesh.AllAreas))
         {
@@ -791,13 +636,10 @@ public class SheepAgent : MonoBehaviour
             StopPastureGrazing();
         }
     }
+
     void PastureGrazingUpdate()
     {
-        if (_targetCell == null)
-        {
-            StopPastureGrazing();
-            return;
-        }
+        if (_targetCell == null) { StopPastureGrazing(); return; }
 
         _grassTravelTimer += Time.deltaTime;
 
@@ -808,18 +650,18 @@ public class SheepAgent : MonoBehaviour
             return;
         }
 
-        float dist = Vector3.Distance(transform.position, _targetCell.transform.position);
+        // ? .center en vez de .transform.position
+        float dist = Vector3.Distance(transform.position, _targetCell.center);
         bool arrived = dist < 1.5f || (!_agent.pathPending && _agent.remainingDistance < 1.2f);
 
         if (!arrived)
         {
-            if (_grassTravelTimer > _grassMaxTravelTime * _personalTravelMultiplier && _grassDecisionLockTimer <= 0f)
+            if (_grassTravelTimer > _grassMaxTravelTime * _personalTravelMultiplier
+                && _grassDecisionLockTimer <= 0f)
             {
                 StopPastureGrazing();
                 TryFindNewGrassWithCooldown();
-                return;
             }
-
             return;
         }
 
@@ -838,18 +680,16 @@ public class SheepAgent : MonoBehaviour
 
         _agent.isStopped = true;
 
-        Vector3 dirToCell = _targetCell.transform.position - transform.position;
+        // ? .center en vez de .transform.position
+        Vector3 dirToCell = _targetCell.center - transform.position;
         dirToCell.y = 0f;
 
         if (dirToCell.sqrMagnitude > 0.001f)
         {
             Quaternion targetRot = Quaternion.LookRotation(dirToCell.normalized);
-
             transform.rotation = Quaternion.RotateTowards(
-                transform.rotation,
-                targetRot,
-                _flock.pastureRotateSpeed * Time.deltaTime
-            );
+                transform.rotation, targetRot,
+                _flock.pastureRotateSpeed * Time.deltaTime);
         }
     }
 
@@ -863,18 +703,10 @@ public class SheepAgent : MonoBehaviour
 
         _grassRepathTimer = _grassRepathInterval * _personalRepathMultiplier;
 
-        GrassCell next = FindBestGrassCell();
+        GrassLogicCell next = FindBestGrassCell();
+        if (next != null) { StartPastureGrazing(next); return; }
 
-        if (next != null)
-        {
-            StartPastureGrazing(next);
-            return;
-        }
-
-        if (TryFollowEatingSheep())
-        {
-            return;
-        }
+        if (TryFollowEatingSheep()) return;
 
         _idleWanderCooldown = _flock.idleWanderInterval;
     }
@@ -883,14 +715,8 @@ public class SheepAgent : MonoBehaviour
     {
         if (_targetCell != null)
         {
-            if (_isPastureGrazingRegistered)
-            {
-                _targetCell.StopGrazing();
-            }
-            else if (_hasGrassReservation)
-            {
-                _targetCell.CancelReservation();
-            }
+            if (_isPastureGrazingRegistered) _targetCell.StopGrazing();
+            else if (_hasGrassReservation) _targetCell.CancelReservation();
         }
 
         _targetCell = null;
@@ -908,18 +734,11 @@ public class SheepAgent : MonoBehaviour
         foreach (var food in _flock.foodSources)
         {
             if (food == null || !food.IsAvailable) continue;
-
             float d = Vector3.Distance(transform.position, food.transform.position);
-
             if (d > food.detectionRadius) continue;
 
             float score = food.attractionPriority / Mathf.Max(d, 0.1f);
-
-            if (score > bestScore)
-            {
-                bestScore = score;
-                best = food;
-            }
+            if (score > bestScore) { bestScore = score; best = food; }
         }
 
         return best;
@@ -936,16 +755,10 @@ public class SheepAgent : MonoBehaviour
             if (food.attractionPriority < 2f) continue;
 
             float d = Vector3.Distance(transform.position, food.transform.position);
-
             if (d > food.detectionRadius) continue;
 
             float score = food.attractionPriority / Mathf.Max(d, 0.1f);
-
-            if (score > bestScore)
-            {
-                bestScore = score;
-                best = food;
-            }
+            if (score > bestScore) { bestScore = score; best = food; }
         }
 
         if (best == null) return Vector3.zero;
@@ -960,7 +773,6 @@ public class SheepAgent : MonoBehaviour
     void MoveToFood(FoodSource food)
     {
         if (!food.TryOccupy()) return;
-
         _targetFood = food;
 
         if (NavMesh.SamplePosition(food.transform.position, out NavMeshHit hit, 3f, NavMesh.AllAreas))
@@ -974,15 +786,9 @@ public class SheepAgent : MonoBehaviour
     void EatingUpdate()
     {
         _eatTimer += Time.deltaTime;
-
         if (_eatTimer >= _eatDuration)
         {
-            if (_targetFood != null)
-            {
-                _targetFood.Release();
-                _targetFood = null;
-            }
-
+            if (_targetFood != null) { _targetFood.Release(); _targetFood = null; }
             _isEating = false;
             _eatTimer = 0f;
             _idleWanderCooldown = _flock.idleWanderInterval;
@@ -992,20 +798,12 @@ public class SheepAgent : MonoBehaviour
     void SetFlocking()
     {
         CurrentState = SheepState.Flocking;
-
-        if (AgentReady)
-        {
-            _agent.isStopped = false;
-        }
+        if (AgentReady) _agent.isStopped = false;
     }
 
     void FlockingUpdate()
     {
-        if (_isEating)
-        {
-            EatingUpdate();
-            return;
-        }
+        if (_isEating) { EatingUpdate(); return; }
 
         if (_targetFood != null)
         {
@@ -1028,57 +826,36 @@ public class SheepAgent : MonoBehaviour
         Vector3 gravityForce = CalculateFlockGravity(false);
         Vector3 antiSplit = CalculateAntiSplit();
         Vector3 windForce = CalculateWindForce();
-
         float flowerBias = Mathf.Lerp(0.4f, 0f, Arousal);
         Vector3 flowerForce = CalculateFlowerAttraction(flowerBias);
 
         Vector3 combined = boidForce + gravityForce + antiSplit + flowerForce + windForce;
-
-        if (combined.sqrMagnitude < 0.001f)
-        {
-            combined = transform.forward;
-        }
+        if (combined.sqrMagnitude < 0.001f) combined = transform.forward;
 
         Vector3 target = transform.position + combined.normalized * 2f;
 
         if (NavMesh.SamplePosition(target, out NavMeshHit hit, 3f, NavMesh.AllAreas))
-        {
             _agent.SetDestination(hit.position);
-        }
 
         FoodSource urgentFood = FindBestFood();
-
         if (urgentFood != null && Arousal < 0.3f && _targetFood == null)
-        {
             MoveToFood(urgentFood);
-        }
     }
 
     void SetFleeing()
     {
         CurrentState = SheepState.Fleeing;
 
-        if (_targetFood != null)
-        {
-            _targetFood.Release();
-            _targetFood = null;
-        }
-
+        if (_targetFood != null) { _targetFood.Release(); _targetFood = null; }
         _isEating = false;
         StopPastureGrazing();
 
         if (AgentReady)
         {
             _agent.isStopped = false;
-
-            if (HasWolfPanic)
-            {
-                _agent.speed = _flock.maxSpeed * _flock.panicSpeedMultiplier;
-            }
-            else
-            {
-                _agent.speed = _flock.maxSpeed * 1.3f;
-            }
+            _agent.speed = HasWolfPanic
+                ? _flock.maxSpeed * _flock.panicSpeedMultiplier
+                : _flock.maxSpeed * 1.3f;
         }
     }
 
@@ -1087,32 +864,20 @@ public class SheepAgent : MonoBehaviour
         Vector3 fleeDir;
 
         if (HasWolfThreat)
-        {
             fleeDir = transform.position - _externalThreat.position;
-        }
         else if (_socialPanicDirection != Vector3.zero)
-        {
             fleeDir = _socialPanicDirection;
-        }
         else
-        {
             fleeDir = transform.position - _flock.playerTransform.position;
-        }
 
         fleeDir.y = 0f;
-
-        if (fleeDir.sqrMagnitude < 0.001f)
-        {
-            fleeDir = transform.forward;
-        }
-
+        if (fleeDir.sqrMagnitude < 0.001f) fleeDir = transform.forward;
         fleeDir.Normalize();
 
         Vector3 boidForce = CalculateBoids();
         Vector3 gravityForce = CalculateFlockGravity(true);
         Vector3 antiSplit = CalculateAntiSplit();
         Vector3 windForce = CalculateWindForce();
-
         float flowerBias = Mathf.Lerp(0.15f, 0f, Arousal);
         Vector3 flowerForce = CalculateFlowerAttraction(flowerBias);
 
@@ -1128,11 +893,8 @@ public class SheepAgent : MonoBehaviour
             {
                 Vector3 awayFromCenter = transform.position - _flock.FlockCentroid;
                 awayFromCenter.y = 0f;
-
                 if (awayFromCenter.sqrMagnitude > 0.01f)
-                {
                     panicScatter = awayFromCenter.normalized * _flock.panicDispersionMultiplier;
-                }
             }
         }
         else
@@ -1140,25 +902,15 @@ public class SheepAgent : MonoBehaviour
             dynFleeWeight = _flock.fleeWeight * Arousal;
         }
 
-        Vector3 combined = fleeDir * dynFleeWeight
-                         + panicScatter
-                         + boidForce
-                         + gravityForce
-                         + antiSplit
-                         + flowerForce
-                         + windForce;
+        Vector3 combined = fleeDir * dynFleeWeight + panicScatter
+                         + boidForce + gravityForce + antiSplit + flowerForce + windForce;
 
-        if (combined.sqrMagnitude < 0.001f)
-        {
-            combined = fleeDir;
-        }
+        if (combined.sqrMagnitude < 0.001f) combined = fleeDir;
 
         Vector3 target = transform.position + combined.normalized * 5f;
 
         if (NavMesh.SamplePosition(target, out NavMeshHit hit, 5f, NavMesh.AllAreas))
-        {
             _agent.SetDestination(hit.position);
-        }
     }
 
     Vector3 CalculateAntiSplit()
@@ -1166,22 +918,15 @@ public class SheepAgent : MonoBehaviour
         if (Arousal < _flock.antiSplitArousalThreshold) return Vector3.zero;
 
         float dist = Vector3.Distance(transform.position, _flock.FlockCentroid);
-
         if (dist < _flock.antiSplitRadius) return Vector3.zero;
 
         Vector3 toCenter = (_flock.FlockCentroid - transform.position).normalized;
 
         float distanceFactor = Mathf.InverseLerp(
-            _flock.antiSplitRadius,
-            _flock.antiSplitRadius * 2f,
-            dist
-        );
+            _flock.antiSplitRadius, _flock.antiSplitRadius * 2f, dist);
 
         float arousalFactor = Mathf.InverseLerp(
-            _flock.antiSplitArousalThreshold,
-            1f,
-            Arousal
-        );
+            _flock.antiSplitArousalThreshold, 1f, Arousal);
 
         return toCenter * _flock.antiSplitWeight * distanceFactor * arousalFactor;
     }
@@ -1192,35 +937,22 @@ public class SheepAgent : MonoBehaviour
 
         Vector3 centroid = _flock.FlockCentroid;
         float dist = Vector3.Distance(transform.position, centroid);
-
         if (dist < _flock.flockGravityRadius) return Vector3.zero;
 
         Vector3 toCenter = (centroid - transform.position).normalized;
 
         float distanceFactor = Mathf.InverseLerp(
-            _flock.flockGravityRadius,
-            _flock.flockGravityRadius * 3f,
-            dist
-        );
-
+            _flock.flockGravityRadius, _flock.flockGravityRadius * 3f, dist);
         distanceFactor = Mathf.Max(distanceFactor, _flock.flockGravityFalloff);
 
         float panicFactor = 1f;
-
         if (panicMode && HasWolfPanic)
-        {
             panicFactor = Mathf.Lerp(1f, _flock.flockGravityPanicMult, Arousal);
-        }
         else if (HasWolfPanic && Arousal > _flock.postPanicArousalThreshold)
-        {
             panicFactor = _flock.postPanicCohesionMultiplier;
-        }
 
         float spreadFactor = Mathf.Clamp(
-            _flock.FlockSpreadRadius / (_flock.flockGravityRadius * 2f),
-            1f,
-            2f
-        );
+            _flock.FlockSpreadRadius / (_flock.flockGravityRadius * 2f), 1f, 2f);
 
         return toCenter * _flock.flockGravityWeight * distanceFactor * panicFactor * spreadFactor;
     }
@@ -1233,14 +965,10 @@ public class SheepAgent : MonoBehaviour
         Vector3 sep = Vector3.zero;
         Vector3 ali = Vector3.zero;
         Vector3 coh = Vector3.zero;
-
         float totalInfluence = 0f;
 
         float perception = Mathf.Lerp(
-            _flock.perceptionRadiusMin,
-            _flock.perceptionRadiusMax,
-            Arousal
-        );
+            _flock.perceptionRadiusMin, _flock.perceptionRadiusMax, Arousal);
 
         int densityCount = 0;
         float expectedDensity = _flock.flockSize * 0.3f;
@@ -1250,7 +978,6 @@ public class SheepAgent : MonoBehaviour
             if (other == null || other == this) continue;
 
             float d = Vector3.Distance(transform.position, other.transform.position);
-
             if (d > perception) continue;
 
             float influence = 1f + other.Arousal;
@@ -1260,26 +987,18 @@ public class SheepAgent : MonoBehaviour
             ali += other.AgentVelocity * influence;
 
             if (d < _flock.separationRadius)
-            {
                 sep += (transform.position - other.transform.position) / Mathf.Max(d, 0.01f);
-            }
 
-            if (d < _flock.densityStressRadius)
-            {
-                densityCount++;
-            }
+            if (d < _flock.densityStressRadius) densityCount++;
         }
 
-        if (totalInfluence == 0f)
-        {
-            return transform.forward;
-        }
+        if (totalInfluence == 0f) return transform.forward;
 
-        coh = (coh / totalInfluence - transform.position).normalized * _flock.cohesionWeight * cohesionMult;
+        coh = (coh / totalInfluence - transform.position).normalized
+            * _flock.cohesionWeight * cohesionMult;
         ali = (ali / totalInfluence).normalized * _flock.alignmentWeight * alignmentMult;
 
         float panicFactor = Mathf.InverseLerp(0.3f, 1f, Arousal);
-
         float separationMultiplier = CurrentState == SheepState.Fleeing && HasWolfPanic
             ? Mathf.Lerp(1f, _flock.panicSeparationMultiplier, panicFactor)
             : 1f;
@@ -1287,7 +1006,6 @@ public class SheepAgent : MonoBehaviour
         sep = sep.normalized * _flock.separationWeight * separationMultiplier;
 
         Vector3 steering = sep + ali + coh;
-
         float localDensity = densityCount / Mathf.Max(1f, expectedDensity);
         float panicMult = Mathf.Lerp(1f, _flock.densityStressPanicMult, Arousal);
         float effectiveThresh = _flock.densityStressThreshold * panicMult;
@@ -1316,7 +1034,6 @@ public class SheepAgent : MonoBehaviour
         foreach (var sheep in _flock.allSheep)
         {
             if (sheep == null || sheep == this) continue;
-
             if (Vector3.Distance(transform.position, sheep.transform.position) < radius)
             {
                 center += sheep.transform.position;
@@ -1340,14 +1057,5 @@ public class SheepAgent : MonoBehaviour
         _animator.SetBool("IsIdleWandering", _isIdleWandering);
         _animator.SetBool("IsEating", _isEating);
         _animator.SetBool("IsPastureGrazing", _isPastureGrazing);
-    }
-}
-
-
-public static class Vector2Ext
-{
-    public static Vector3 ToVector3XZ(this Vector2 v)
-    {
-        return new Vector3(v.x, 0f, v.y);
     }
 }
